@@ -19,30 +19,45 @@ export type ChapterMeta = {
   inNav: boolean;
 };
 
-/** 首页本体的三章：没有独立路由，也就没有对应的旧地址需要重定向 */
-const HOME_CHAPTERS: ChapterMeta[] = [
-  { id: "posts", index: "01", label: "最新文章", inNav: false },
-  { id: "columns", index: "02", label: "我的栏目", inNav: false },
-  {
-    id: "about",
-    index: "03",
-    label: "关于我",
-    tagline: siteConfig.author.tagline,
-    inNav: true,
-  },
-];
+/**
+ * 首章：最新文章。没有独立路由，也就没有对应的旧地址需要重定向。
+ * 「我的栏目」不在此列——它已经不是一章，而是 Hero 正下方那行目录卡片
+ * （见 src/components/site/section-index.tsx），没有编号也没有竖排书签。
+ */
+const POSTS_CHAPTER: ChapterMeta = {
+  id: "posts",
+  index: "01",
+  label: "最新文章",
+  inNav: false,
+};
 
-/** 展示板块五章：编号接在首页三章之后；文案直接取 showcaseNav，不复制一份 */
+/** 展示板块五章：编号接在最新文章之后；文案直接取 showcaseNav，不复制一份 */
 const SHOWCASE_CHAPTERS: ChapterMeta[] = showcaseNav.map((item, i) => ({
   id: item.href.slice(1),
-  index: String(i + 4).padStart(2, "0"),
+  index: String(i + 2).padStart(2, "0"),
   label: item.label,
   tagline: item.tagline,
   inNav: true,
 }));
 
-/** 页面顺序即此数组顺序 */
-export const chapters: ChapterMeta[] = [...HOME_CHAPTERS, ...SHOWCASE_CHAPTERS];
+/**
+ * 末章：关于我，压在页脚之前。
+ * 编号按「最新文章 1 + 展示板块各占一号」往后接，加/减展示板块时它会自动跟着走。
+ */
+const ABOUT_CHAPTER: ChapterMeta = {
+  id: "about",
+  index: String(SHOWCASE_CHAPTERS.length + 2).padStart(2, "0"),
+  label: "关于我",
+  tagline: siteConfig.author.tagline,
+  inNav: true,
+};
+
+/** 页面顺序即此数组顺序；导航顺序也取自这里（filter inNav） */
+export const chapters: ChapterMeta[] = [
+  POSTS_CHAPTER,
+  ...SHOWCASE_CHAPTERS,
+  ABOUT_CHAPTER,
+];
 
 /** 按 id 取章节元信息（找不到就是写错了 id，直接抛） */
 export function chapterMeta(id: string): ChapterMeta {

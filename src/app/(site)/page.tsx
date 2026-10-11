@@ -1,6 +1,5 @@
 import { AboutChapter } from "@/components/site/chapters/about-chapter";
 import { BooksChapter } from "@/components/site/chapters/books-chapter";
-import { ColumnsChapter } from "@/components/site/chapters/columns-chapter";
 import { FavoritesChapter } from "@/components/site/chapters/favorites-chapter";
 import { GameChapter } from "@/components/site/chapters/game-chapter";
 import { MusicChapter } from "@/components/site/chapters/music-chapter";
@@ -9,6 +8,7 @@ import { ProjectsChapter } from "@/components/site/chapters/projects-chapter";
 import { Hero } from "@/components/site/hero";
 import { PageIntro } from "@/components/site/page-intro";
 import { ParallaxImages } from "@/components/site/parallax";
+import { SectionIndex } from "@/components/site/section-index";
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
@@ -27,14 +27,17 @@ export default function HomePage(props: { searchParams: SearchParams }) {
       <PageIntro>
         <Hero />
 
+        {/* 全站目录：Hero 正下方那行卡片（悬浮会画出通往目标章节的折线） */}
+        <SectionIndex />
+
         <PostsChapter searchParams={props.searchParams} />
-        <ColumnsChapter />
-        <AboutChapter />
         <FavoritesChapter />
         <ProjectsChapter />
         <GameChapter />
         <MusicChapter />
         <BooksChapter />
+        {/* 关于我压在页脚之前 */}
+        <AboutChapter />
       </PageIntro>
     </>
   );

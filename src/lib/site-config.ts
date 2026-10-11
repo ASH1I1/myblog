@@ -11,10 +11,14 @@ export const siteConfig = {
   description: "一个人的博客：记录、分享与思考。",
   /** 博主信息（首页 Hero 区与「关于我」页使用） */
   author: {
-    name: "bin 站长",
+    name: "YongBin",
     tagline: "写下，即为思考。",
-    /** 头像图片 URL，留空则展示昵称首字母占位 */
-    avatar: "",
+    /**
+     * 头像图片 URL，留空则展示昵称首字母占位。
+     * 直接指向站点图标 src/app/icon.png（本身就是那张 3D 多边兽的低多边形图），
+     * 同一份素材两处使用，不复制第二份——将来换图标，头像会跟着一起换。
+     */
+    avatar: "/icon.png",
   },
   /** 「关于我」页面内容 */
   about: {

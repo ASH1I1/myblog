@@ -96,7 +96,13 @@
     .container-showcase {
       max-width: none;
       display: grid;
-      grid-template-columns: auto minmax(0, 72rem);
+      /* 书签栏至少 142px（= 1 级字 4.5rem × 1.15 的行高约 83px + 栏间距 16px
+         + 标语列约 19px + 右内边距 24px）。写成 minmax 而不是固定值，是为了让
+         内容更宽时还能撑开；给下限是为了**统一**：没有副标语的章节（如 01 最新文章）
+         书签栏本来只有 107px，会让它的内容列比别的章靠左 35px，
+         而 Hero 下面那行目录卡片（也按 142px 让位）就对不齐了。
+         justify-content: start 保证 auto 轨道不吸收剩余空间（见下）。 */
+      grid-template-columns: minmax(142px, auto) minmax(0, 72rem);
       /* 必须显式 start：网格里 auto 轨道的默认行为是「吸收剩余空间」，
          容器解封后竖排栏会被撑到几百像素宽，书脊线与内容列跟着整体右移。
          写成 start 后两列按内容尺寸靠左排，多出来的空间一律留在右侧。 */
