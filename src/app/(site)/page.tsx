@@ -1,13 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
-// motion-kit 的 Reveal 与本仓库 site/reveal 的 Reveal 同名，故重命名后引入
-import { CountUp, Reveal as KitReveal } from "@/components/motion-kit";
+import { CountUp, Reveal } from "@/components/motion-kit";
 import { Hero } from "@/components/site/hero";
 import { PageIntro } from "@/components/site/page-intro";
 import { ParallaxImages } from "@/components/site/parallax";
 import { PostCard } from "@/components/site/post-card";
 import { PostListSkeleton } from "@/components/site/post-list-skeleton";
-import { Reveal, Stagger, StaggerItem } from "@/components/site/reveal";
 import { SectionLabel } from "@/components/site/section-label";
 import { Pagination } from "@/components/ui/pagination";
 import { getPublishedPostsPage } from "@/lib/db/queries";
@@ -38,7 +36,7 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
         <Hero />
 
         {/* 01 最新文章：三列卡片 */}
-        <section aria-labelledby="section-posts" className="border-t border-border">
+        <section aria-labelledby="section-posts">
           <div className="container-page py-16 md:py-24">
             <SectionLabel
               id="section-posts"
@@ -57,18 +55,15 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
         </section>
 
         {/* 02 我的栏目：横向卡片列表（图标 + 一句介绍） */}
-        <section aria-labelledby="section-columns" className="border-t border-border">
+        <section aria-labelledby="section-columns">
           <div className="container-page py-16 md:py-24">
             <SectionLabel id="section-columns">02 我的栏目</SectionLabel>
 
-            <Stagger
-              className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
-              gap={0.06}
-            >
-              {showcaseNav.map((item) => {
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {showcaseNav.map((item, index) => {
                 const Icon = SECTION_ICONS[item.href];
                 return (
-                  <StaggerItem key={item.href} className="h-full">
+                  <Reveal key={item.href} delay={index * 0.08} className="h-full">
                     <Link
                       href={item.href}
                       className="group flex h-full flex-col rounded-2xl border border-border bg-background p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:border-klein"
@@ -81,15 +76,15 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
                       <span className="type-body mt-4 font-medium">{item.label}</span>
                       <span className="type-label mt-2 text-muted">{item.tagline}</span>
                     </Link>
-                  </StaggerItem>
+                  </Reveal>
                 );
               })}
-            </Stagger>
+            </div>
           </div>
         </section>
 
         {/* 03 关于我：头像 + 一句话自我介绍（名片式） */}
-        <section aria-labelledby="section-about" className="border-t border-border">
+        <section aria-labelledby="section-about">
           <div className="container-page py-16 md:py-24">
             <SectionLabel id="section-about">03 关于我</SectionLabel>
 
@@ -150,12 +145,14 @@ async function PostList({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <div className="mt-8 space-y-12">
-      {/* 三列网格（平板两列、手机单列），卡片逐张错开浮现（每张 80ms，motion-kit 的 Reveal） */}
+      {/* 三列网格（平板两列、手机单列），卡片逐张错开浮现（每张 80ms）
+          延迟按字面 index × 80ms：Reveal 是 whileInView + once，
+          计时只在卡片进入视口时才开始，折叠线以下的行本来就要滚到才触发 */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {data.items.map((post, index) => (
-          <KitReveal key={post.id} delay={index * 0.08} className="h-full">
+          <Reveal key={post.id} delay={index * 0.08} className="h-full">
             <PostCard post={post} />
-          </KitReveal>
+          </Reveal>
         ))}
       </div>
 

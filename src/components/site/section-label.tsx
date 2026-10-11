@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef, type ReactNode } from "react";
-import { Reveal } from "@/components/site/reveal";
+import { Reveal } from "@/components/motion-kit";
 
 /**
  * 首页章节编号标签（01 / 02 / 03）——滚动进度指示：

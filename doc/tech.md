@@ -1,9 +1,10 @@
 # 个人博客系统 技术方案（Tech Design）
 
-> **文档版本**：v1.2
-> **更新日期**：2026-10-10
+> **文档版本**：v1.3
+> **更新日期**：2026-10-11
 > **关联文档**：`doc/PRD.md`
-> **文档状态**：第 0~5 步已全部完成并通过验收（部署方式待定）
+> **文档状态**：第 0~5 步已全部完成并通过验收（部署方式待定）；此后陆续加了展示板块（`/favorites` `/code` `/game` `/music` `/books`）与两轮动效工作
+> **v1.3 修订**：路由表补上五个展示板块；「十、实现记录」补 §10.2.12（全站背景连续化 + 动效同步）
 > **v1.2 修订**：补充「十、实现记录」——关键细节、与方案的偏差、验收结果
 > **v1.1 修订**：按实际实施校准——Next.js 16.4（Turbopack + Cache Components）、middleware 更名为 proxy、缓存与鉴权模式细化
 
@@ -89,7 +90,10 @@ newblog/
 │   │   ├── layout.tsx
 │   │   └── globals.css
 │   ├── components/
-│   │   ├── site/   navbar / footer / post-card / pagination / markdown
+│   │   ├── motion-kit.tsx         # CharReveal / Reveal / MouseGlow / CountUp（全站动效原语）
+│   │   ├── site/   site-background（静态网格纸，挂根布局）
+│   │   │           site-atmosphere / navbar / footer / hero / page-header / post-card
+│   │   │           page-intro / section-label / markdown / smooth-scroll / parallax
 │   │   ├── admin/  admin-shell / post-table / post-form / editor / stat-card
 │   │   └── ui/     button / input / dialog / badge
 │   ├── actions/    auth.ts / posts.ts          # Server Actions
@@ -114,12 +118,15 @@ newblog/
 | `/` | 首页，已发布文章倒序，9 篇/页 | 公开，`?page=2` |
 | `/posts/[id]` | 文章详情（Markdown、上下篇、阅读量） | 公开；不存在或草稿 → 404 |
 | `/about` | 关于我 | 公开 |
+| `/favorites` `/code` `/game` `/music` `/books` | 个人展示板块（最爱 / 代码 / 游戏 / 音乐 / 著作），内容全在 `src/lib/showcase.ts`，各自带主题色 | 公开 |
 | `/admin/login` | 登录 | 公开；已登录访问直接跳仪表盘 |
 | `/admin` | 仪表盘（总数/已发布/草稿 + 最近 5 篇） | 仅管理员 |
 | `/admin/posts` | 文章列表/搜索/筛选/分页 | 仅管理员，`?page&q&status`，10 条/页 |
 | `/admin/posts/new` | 新建文章 | 仅管理员 |
 | `/admin/posts/[id]/edit` | 编辑文章 | 仅管理员 |
 | 其他 | 404 页（含「返回首页」） | — |
+
+> 展示板块是 PRD 三页之外后加的（导航栏 `showcaseNav` 顺序即导航顺序），与博客本体分开：站点信息在 `src/lib/site-config.ts`，展示内容在 `src/lib/showcase.ts`。
 
 ### 6.2 写操作接口（Server Actions，每个第一行均 `requireAdmin()`）
 
@@ -247,6 +254,7 @@ posts
 9. **动画常驻层与「减少动效」的冲突（2026-10-11 首屏动效加强时发现）**：globals.css 的降级规则是 `[data-anim], [data-anim] * { opacity: 1 !important; transform: none !important }`——它按**祖先**匹配，PageIntro 带 `data-anim`，于是 Hero 里所有后代都会被强制点亮。因此新增的两层常驻动效（网格微光 `.hero-grid-sweep`、光标光斑 `.hero-cursor-glow`）不标 `data-anim`，改为在 reduce 媒体查询里显式 `display: none`；否则 reduce 下会各留一块静态痕迹（光斑还会僵在 Hero 正中心）。同理，光标光斑的"手机端自动关闭"用 `(hover: hover) and (pointer: fine)`（JS 判定，不做随媒体查询变化的渲染分支）+ `hidden md:block`（CSS 兜底）双保险。
 10. **首屏动效的时序耦合**：副标语的出场时机由标题节奏推出（`TITLE_DELAY + (字数-1) × TITLE_STAGGER + TITLE_BLUR_DURATION + 0.3`），字号、缓动统一走 `EASE_OUT_SOFT`（`components/site/motion-config.tsx`，与 CSS 变量 `--ease-out-soft` 同值），详见 `memory-back/plan.md` 第十节。
 11. **motion-kit 组件接入（2026-10-11）**：新增 `src/components/motion-kit.tsx`（CharReveal 标题逐字 / MouseGlow 光标光斑 / Reveal 进视口淡入 / CountUp 数字滚动），首页 Hero 与文章卡片改由它驱动，同名的本地 `Reveal` 在 `page.tsx` 里以 `KitReveal` 别名引入。四个要点：① 不新装 `framer-motion`——仓库里的 `motion` v14 即其现名，`motion/react` 直接再导出它；② kit 原样的 `MouseGlow` 在 effect 里同步 `setState`，会触发本仓库启用的 `react-hooks/set-state-in-effect`（见 §10.2.6），已改为 `useSyncExternalStore` 订阅媒体查询；③ 组件必须带 `data-anim` 才能进入既有的降级体系——减少动效时直接呈现终态、无 JS 时由 layout 的 noscript 样式兜底，否则初始 `opacity:0` 会让内容永久不可见；④ 副标语的 delay 仍由标题节奏推导（CharReveal 的 step × 字数 + 单字时长 + 0.3），不是清单里的固定值。改动清单、行为说明与实测时序见 `memory-back/plan.md` 第十一节。
+12. **全站背景连续化 + 动效同步（2026-10-11）**：背景按布局分两层——根布局的 `<SiteBackground>`（静态网格纸，覆盖前台 + 后台 + 全局 404）与 `(site)` 布局的 `<SiteAtmosphere>` + `<MouseGlow>`（会动的部分只在前台）。后台「要纸不要动画」因此零路由判断。四个要点：① 页面基调仍是 `--color-background`（#ffffff），网格层只贴纹理——分界线的根因是 Hero 的 `bg-surface`，去掉即统一，把整站改 #fafafa 会毁掉 `hover:bg-surface` 行高亮与骨架屏；② 三层用显式负 z-index（-30/-20/-10）而非 DOM 顺序，且全部位于内容之下，网格线不压正文（PRD 4.4 对比度）；③ 光斑改纯 CSS keyframes（只动 transform），不依赖 JS、不增客户端包体，后台无 MotionProvider 也成立；④ 原语统一到 motion-kit（页头标题改 `CharReveal`，`Stagger/StaggerItem` → `<Reveal delay={index * 0.08}>`），`site/reveal.tsx` 与 `split-text.tsx` 已删除，「两个同名 Reveal」的疙瘩消失。分隔线策略：区块级硬线删除、页头大标题下保留两端渐隐的 `.rule-fade-t/-b/-y`、列表逐行细线保留。**开发坑**：改 `globals.css` 后 Turbopack 的 CSS 增量编译可能给出旧产物（hash 与 mtime 都更新、内容却是旧的），重启无效，`touch` 一次才生效——改完 CSS 必须验证 `.next/dev/static/chunks/*._.css` 里确有新类名。详见 `memory-back/plan.md` 第十二节。
 
 ### 10.3 验收结果（实测）
 

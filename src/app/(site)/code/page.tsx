@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { Reveal } from "@/components/motion-kit";
 import { PageHeader } from "@/components/site/page-header";
-import { Reveal, Stagger, StaggerItem } from "@/components/site/reveal";
 import { projects, showcaseNav, skills } from "@/lib/showcase";
 
 const section = showcaseNav.find((item) => item.href === "/code")!;
@@ -17,16 +17,16 @@ export default function CodePage() {
         <Reveal>
           <h2 className="type-label font-mono tracking-[0.35em] text-faint">STACK</h2>
         </Reveal>
-        <Stagger className="mt-5 border-t border-border" gap={0.07}>
-          {skills.map((group) => (
-            <StaggerItem key={group.title}>
+        <div className="mt-5 border-t border-border">
+          {skills.map((group, index) => (
+            <Reveal key={group.title} delay={index * 0.08}>
               <div className="flex flex-col gap-3 border-b border-border py-6 sm:flex-row sm:items-baseline sm:gap-12">
                 <span className="type-label w-24 shrink-0 text-muted">{group.title}</span>
                 <span className="type-label font-mono">{group.skills.join("   ·   ")}</span>
               </div>
-            </StaggerItem>
+            </Reveal>
           ))}
-        </Stagger>
+        </div>
       </section>
 
       {/* 项目 */}
@@ -34,9 +34,9 @@ export default function CodePage() {
         <Reveal>
           <h2 className="type-label font-mono tracking-[0.35em] text-faint">PROJECTS</h2>
         </Reveal>
-        <Stagger className="mt-5 grid gap-6 sm:grid-cols-2" gap={0.08}>
-          {projects.map((project) => (
-            <StaggerItem key={project.name}>
+        <div className="mt-5 grid gap-6 sm:grid-cols-2">
+          {projects.map((project, index) => (
+            <Reveal key={project.name} delay={index * 0.08}>
               <div className="group flex h-full flex-col rounded-2xl border border-border p-7 transition-all duration-500 ease-out hover:-translate-y-1 hover:border-klein hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.25)]">
                 <h3 className="type-body font-medium">{project.name}</h3>
                 <p className="type-label mt-2 flex-1 text-muted">{project.description}</p>
@@ -50,9 +50,9 @@ export default function CodePage() {
                   查看项目 →
                 </a>
               </div>
-            </StaggerItem>
+            </Reveal>
           ))}
-        </Stagger>
+        </div>
       </section>
     </div>
   );

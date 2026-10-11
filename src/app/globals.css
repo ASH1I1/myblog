@@ -25,6 +25,9 @@
 }
 
 @layer base {
+  /* 页面基调色只写在这里（会传播到 canvas）。全站固定背景层用的是负 z-index，
+     靠「body 背景传播到 canvas、body 自身不画背景」才浮得出来——
+     所以 html 和任何祖先都不要再加背景色，否则固定层会被整片盖住。 */
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -90,7 +93,7 @@
     letter-spacing: 0.06em;
   }
 
-  /* 印刷质感：坐标网格纹理（Hero 背景用） */
+  /* 印刷质感：坐标网格纹理（全站固定背景层 SiteBackground 用） */
   .bg-grid {
     background-image:
       linear-gradient(to right, rgb(16 16 16 / 0.045) 1px, transparent 1px),
@@ -98,10 +101,10 @@
     background-size: 32px 32px;
   }
 
-  /* Hero 背景网格上的微光：一条白色为主、克莱因蓝作淡边的宽光带，扫过处网格线被提亮。
+  /* 背景网格上的微光：一条白色为主、克莱因蓝作淡边的宽光带，扫过处网格线被提亮。
      纯 CSS 动画（8s 一轮：前 45% 缓缓右移，其余时间停在画外）——存在感很轻，
      减少动效时由下方 display:none 直接关掉 */
-  .hero-grid-sweep {
+  .grid-sweep {
     position: absolute;
     inset: 0;
     background: linear-gradient(
@@ -113,7 +116,42 @@
       transparent 57%
     );
     transform: translate3d(-60%, 0, 0);
-    animation: hero-grid-sweep 8s ease-in-out infinite;
+    animation: grid-sweep 8s ease-in-out infinite;
+  }
+
+  /* 漂浮光斑：两团极淡的径向光晕（克莱因蓝 / 墨黑），缓慢原地漂浮。
+     原来是 Hero 里的 motion.div 循环动画，提到全站固定层后改用纯 CSS keyframes——
+     只动 transform，不依赖 JS，后台（无 MotionProvider）也不会被牵连 */
+  .site-orb {
+    position: absolute;
+    border-radius: 9999px;
+    will-change: transform;
+  }
+
+  .site-orb-klein {
+    left: 16%;
+    top: 28%;
+    width: 14rem;
+    height: 14rem;
+    background: radial-gradient(
+      circle,
+      rgb(0 47 167 / 0.14) 0%,
+      rgb(0 47 167 / 0) 70%
+    );
+    animation: site-orb-drift-a 9s ease-in-out infinite;
+  }
+
+  .site-orb-ink {
+    right: 14%;
+    bottom: 26%;
+    width: 18rem;
+    height: 18rem;
+    background: radial-gradient(
+      circle,
+      rgb(16 16 16 / 0.07) 0%,
+      rgb(16 16 16 / 0) 70%
+    );
+    animation: site-orb-drift-b 11s ease-in-out 1.2s infinite;
   }
 
   /* 印刷质感：轻微噪点（配合 pointer-events:none 的固定浮层使用） */
@@ -121,19 +159,85 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
     opacity: 0.05;
   }
+
+  /* 渐隐发丝线：区块之间不用 border 硬切，改用一条两端淡出的 1px 线，
+     与背景融合。用 background 画而非 border——不占布局高度、不动内边距。
+     三个类分开写是必须的：background-position 会互相覆盖，没法组合。 */
+  .rule-fade-t,
+  .rule-fade-b,
+  .rule-fade-y {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-border) 12%,
+      var(--color-border) 88%,
+      transparent
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+  }
+
+  .rule-fade-t {
+    background-position: 0 0;
+  }
+
+  .rule-fade-b {
+    background-position: 0 100%;
+  }
+
+  .rule-fade-y {
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 12%,
+        var(--color-border) 88%,
+        transparent
+      ),
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 12%,
+        var(--color-border) 88%,
+        transparent
+      );
+    background-size: 100% 1px, 100% 1px;
+    background-position: 0 0, 0 100%;
+  }
 }
 
 /* ============================ 动效（Motion） ============================ */
 
-/* Hero 网格微光：从画外左侧缓缓扫到画外右侧（平移量为自身宽度的 -60% → 60%，
+/* 网格微光：从画外左侧缓缓扫到画外右侧（平移量为自身宽度的 -60% → 60%，
    光带正好从网格左外侧走到右外侧），后 55% 停在画外等待下一轮 */
-@keyframes hero-grid-sweep {
+@keyframes grid-sweep {
   0% {
     transform: translate3d(-60%, 0, 0);
   }
   45%,
   100% {
     transform: translate3d(60%, 0, 0);
+  }
+}
+
+/* 漂浮光斑的原地漂浮（对应原先 motion 的 x/y 摆动，全部走 translate3d） */
+@keyframes site-orb-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(16px, -24px, 0);
+  }
+}
+
+@keyframes site-orb-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-14px, 22px, 0);
   }
 }
 
@@ -170,18 +274,28 @@
     display: none !important;
   }
 
-  /* 网格微光扫过在降级时直接隐藏：
-     它的父层带 data-anim，会被上面的 !important 规则钉成 opacity:1 + transform:none，
-     等于把光带永久停在网格左侧——不如索性不显示 */
-  .hero-grid-sweep {
+  /* 网格微光扫过在降级时直接隐藏（扫过本身就是「动」，没有静止形态可言） */
+  .grid-sweep {
     display: none;
+  }
+
+  /* 漂浮光斑在降级时停住而不是隐藏：光晕是画面的一部分，静止的光晕不是动效。
+     写成 animation:none 是明确表态——只靠上面的 animation-duration 规则的话，
+     动画会被瞬间推到 100% 关键帧，眼下恰好也是原位，但日后有人改关键帧就会悄悄错位。 */
+  .site-orb {
+    animation: none;
   }
 }
 
-/* 手机端关闭视差（保留进场动画）：视差层不做任何位移 */
+/* 手机端（PRD 断点 <768px）关闭视差与光斑，保留进场动画 */
 @media (width < 768px) {
   [data-parallax-layer] {
     transform: none !important;
+  }
+
+  /* 光斑在手机端直接不显示：屏幕小、光晕容易被误读成脏污 */
+  .site-orb {
+    display: none;
   }
 }
 

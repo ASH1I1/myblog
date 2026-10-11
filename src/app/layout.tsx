@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SiteBackground } from "@/components/site/site-background";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
 
@@ -27,7 +28,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {/* 全站固定背景（网格纸）：前台与后台共用，滚动时不动 */}
+        <SiteBackground />
+        {children}
+      </body>
     </html>
   );
 }

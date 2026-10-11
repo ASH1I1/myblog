@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { Reveal } from "@/components/motion-kit";
 import { PageHeader } from "@/components/site/page-header";
-import { Reveal, Stagger, StaggerItem } from "@/components/site/reveal";
 import { music, showcaseNav } from "@/lib/showcase";
 
 const section = showcaseNav.find((item) => item.href === "/music")!;
@@ -14,7 +14,7 @@ export default function MusicPage() {
 
       {/* 年度循环（1 级标题） */}
       <Reveal className="mt-14">
-        <section className="border-y border-border py-12">
+        <section className="rule-fade-y py-12">
           <p className="type-label font-mono tracking-[0.35em] text-faint">
             ON REPEAT · 去年
           </p>
@@ -31,18 +31,18 @@ export default function MusicPage() {
           <Reveal>
             <h2 className="type-label font-mono tracking-[0.35em] text-faint">ARTISTS</h2>
           </Reveal>
-          <Stagger className="mt-5 border-t border-border" gap={0.07}>
-            {music.artists.map((artist) => (
-              <StaggerItem key={artist.name}>
+          <div className="mt-5 border-t border-border">
+            {music.artists.map((artist, index) => (
+              <Reveal key={artist.name} delay={index * 0.08}>
                 <div className="flex items-baseline gap-4 border-b border-border py-5">
                   <span className="type-body font-medium">{artist.name}</span>
                   <span className="type-label ml-auto text-right text-muted">
                     {artist.note}
                   </span>
                 </div>
-              </StaggerItem>
+              </Reveal>
             ))}
-          </Stagger>
+          </div>
         </section>
 
         {/* 最近循环 */}
@@ -50,9 +50,9 @@ export default function MusicPage() {
           <Reveal>
             <h2 className="type-label font-mono tracking-[0.35em] text-faint">LATELY</h2>
           </Reveal>
-          <Stagger className="mt-5 border-t border-border" gap={0.07}>
+          <div className="mt-5 border-t border-border">
             {music.onRepeat.map((track, index) => (
-              <StaggerItem key={track.title}>
+              <Reveal key={track.title} delay={index * 0.08}>
                 <div className="flex items-baseline gap-5 border-b border-border py-5">
                   <span className="type-label font-mono text-faint">
                     {String(index + 1).padStart(2, "0")}
@@ -60,9 +60,9 @@ export default function MusicPage() {
                   <span className="type-body font-medium">{track.title}</span>
                   <span className="type-label ml-auto text-muted">{track.artist}</span>
                 </div>
-              </StaggerItem>
+              </Reveal>
             ))}
-          </Stagger>
+          </div>
         </section>
       </div>
     </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Reveal } from "@/components/motion-kit";
 import { ArticleSkeleton } from "@/components/site/article-skeleton";
 import { MarkdownRenderer } from "@/components/site/markdown";
 import { ViewCounter } from "@/components/site/view-counter";
@@ -72,53 +73,59 @@ async function Article({ params }: { params: Params }) {
 
   return (
     <article className="container-page pb-10 pt-24 md:pb-14 md:pt-28">
-      <header className="mx-auto max-w-[45rem]">
-        {/* 1 级字：超大极粗标题 */}
-        <h1 className="type-display">{post.title}</h1>
-        <div className="type-label mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted">
-          <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
-          <span aria-hidden="true">·</span>
-          <ViewCounter postId={post.id} initialViews={post.views} />
-        </div>
-      </header>
+      {/* 进场：标题块 / 正文 / 上下篇分三段错开淡入上移。
+          标题刻意不逐字——文章标题可能很长，逐字会拖成漫长的等待（第 5 条豁免） */}
+      <Reveal>
+        <header className="mx-auto max-w-[45rem]">
+          {/* 1 级字：超大极粗标题 */}
+          <h1 className="type-display">{post.title}</h1>
+          <div className="type-label mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted">
+            <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
+            <span aria-hidden="true">·</span>
+            <ViewCounter postId={post.id} initialViews={post.views} />
+          </div>
+        </header>
+      </Reveal>
 
-      <div className="mx-auto mt-8 max-w-[45rem]">
+      <Reveal delay={0.08} className="mx-auto mt-8 max-w-[45rem]">
         <MarkdownRenderer>{post.content}</MarkdownRenderer>
-      </div>
+      </Reveal>
 
       {/* 上一篇 / 下一篇（PRD 3.2.2，边界情况留空占位保持布局稳定） */}
-      <nav
-        aria-label="上一篇与下一篇"
-        className="mx-auto mt-14 grid max-w-[45rem] gap-4 border-t border-border pt-6 sm:grid-cols-2"
-      >
-        {prev ? (
-          <Link
-            href={`/posts/${prev.id}`}
-            className="group rounded-lg border border-border p-4 transition-colors duration-300 ease-out hover:border-klein"
-          >
-            <span className="type-label text-muted">上一篇</span>
-            <span className="type-body mt-1 block truncate font-medium transition-colors duration-300 ease-out group-hover:text-klein">
-              {prev.title}
-            </span>
-          </Link>
-        ) : (
-          <div aria-hidden="true" className="hidden sm:block" />
-        )}
+      <Reveal delay={0.12}>
+        <nav
+          aria-label="上一篇与下一篇"
+          className="rule-fade-t mx-auto mt-14 grid max-w-[45rem] gap-4 pt-6 sm:grid-cols-2"
+        >
+          {prev ? (
+            <Link
+              href={`/posts/${prev.id}`}
+              className="group rounded-lg border border-border p-4 transition-colors duration-300 ease-out hover:border-klein"
+            >
+              <span className="type-label text-muted">上一篇</span>
+              <span className="type-body mt-1 block truncate font-medium transition-colors duration-300 ease-out group-hover:text-klein">
+                {prev.title}
+              </span>
+            </Link>
+          ) : (
+            <div aria-hidden="true" className="hidden sm:block" />
+          )}
 
-        {next ? (
-          <Link
-            href={`/posts/${next.id}`}
-            className="group rounded-lg border border-border p-4 transition-colors duration-300 ease-out hover:border-klein sm:text-right"
-          >
-            <span className="type-label text-muted">下一篇</span>
-            <span className="type-body mt-1 block truncate font-medium transition-colors duration-300 ease-out group-hover:text-klein">
-              {next.title}
-            </span>
-          </Link>
-        ) : (
-          <div aria-hidden="true" className="hidden sm:block" />
-        )}
-      </nav>
+          {next ? (
+            <Link
+              href={`/posts/${next.id}`}
+              className="group rounded-lg border border-border p-4 transition-colors duration-300 ease-out hover:border-klein sm:text-right"
+            >
+              <span className="type-label text-muted">下一篇</span>
+              <span className="type-body mt-1 block truncate font-medium transition-colors duration-300 ease-out group-hover:text-klein">
+                {next.title}
+              </span>
+            </Link>
+          ) : (
+            <div aria-hidden="true" className="hidden sm:block" />
+          )}
+        </nav>
+      </Reveal>
     </article>
   );
 }

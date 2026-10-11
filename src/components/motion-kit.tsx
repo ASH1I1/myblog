@@ -51,7 +51,7 @@ export function CharReveal({
         const accent = accentLast && i === text.length - 1;
         const charDelay = delay + i * step;
         // 高亮字：揭示交给 clip-path 色块擦除（要有硬边，故不参与模糊、也不淡入），
-        // 只跟随整体做上浮 + 旋转 —— 与仓库原有 SplitText 的处理一致
+        // 只跟随整体做上浮 + 旋转 —— 与首页站名尾字的处理一致
         if (accent) {
           return (
             <motion.span
@@ -166,7 +166,7 @@ export function MouseGlow({
   return (
     <motion.div
       aria-hidden
-      className="pointer-events-none fixed left-0 top-0 z-0"
+      className="pointer-events-none fixed left-0 top-0 -z-10"
       style={{ x: sx, y: sy }}
     >
       <div

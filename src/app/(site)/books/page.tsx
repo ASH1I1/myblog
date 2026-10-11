@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { Reveal } from "@/components/motion-kit";
 import { PageHeader } from "@/components/site/page-header";
-import { Stagger, StaggerItem } from "@/components/site/reveal";
 import { books, showcaseNav } from "@/lib/showcase";
 import { cn } from "@/lib/utils";
 
@@ -13,9 +13,9 @@ export default function BooksPage() {
     <div className="container-page py-20 md:py-24">
       <PageHeader index="06" title={section.label} subtitle={section.tagline} />
 
-      <Stagger className="mt-14 border-t border-border" gap={0.07}>
-        {books.map((book) => (
-          <StaggerItem key={book.title}>
+      <div className="mt-14 border-t border-border">
+        {books.map((book, index) => (
+          <Reveal key={book.title} delay={index * 0.08}>
             <article className="flex flex-col gap-3 border-b border-border py-6 transition-colors duration-300 ease-out hover:bg-surface sm:flex-row sm:items-start sm:gap-8">
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3">
@@ -44,9 +44,9 @@ export default function BooksPage() {
                 </p>
               ) : null}
             </article>
-          </StaggerItem>
+          </Reveal>
         ))}
-      </Stagger>
+      </div>
     </div>
   );
 }

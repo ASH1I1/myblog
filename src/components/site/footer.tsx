@@ -18,7 +18,7 @@ export async function Footer() {
     "type-label text-muted underline-offset-4 transition-colors duration-300 ease-out hover:text-klein hover:underline";
 
   return (
-    <footer className="border-t border-border bg-surface">
+    <footer className="rule-fade-t">
       <div className="container-page grid gap-8 py-12 sm:grid-cols-2 sm:items-center">
         {/* 左栏：站名 + 版权 */}
         <div>

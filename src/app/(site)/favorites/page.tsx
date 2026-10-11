@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { Reveal } from "@/components/motion-kit";
 import { PageHeader } from "@/components/site/page-header";
-import { Reveal, Stagger, StaggerItem } from "@/components/site/reveal";
 import { favorites, showcaseNav } from "@/lib/showcase";
 
 const section = showcaseNav.find((item) => item.href === "/favorites")!;
@@ -20,9 +20,9 @@ export default function FavoritesPage() {
             </h2>
           </Reveal>
 
-          <Stagger className="mt-5 border-t border-border" gap={0.07}>
-            {group.links.map((link) => (
-              <StaggerItem key={link.name}>
+          <div className="mt-5 border-t border-border">
+            {group.links.map((link, index) => (
+              <Reveal key={link.name} delay={index * 0.08}>
                 <a
                   href={link.url}
                   target="_blank"
@@ -38,9 +38,9 @@ export default function FavoritesPage() {
                     ↗
                   </span>
                 </a>
-              </StaggerItem>
+              </Reveal>
             ))}
-          </Stagger>
+          </div>
         </section>
       ))}
     </div>

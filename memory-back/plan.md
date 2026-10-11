@@ -130,3 +130,43 @@
 - 光斑：鼠标移到 (1150,260) 后 boundingBox 即 `[1150,260,320]`。
 - 减少动效：标题 6 字全 1、clip `none`、擦除块 `display:none`、卡片 opacity 1、统计直接显示 8、光斑不渲染、网格微光 `display:none`。
 - 控制台：正常模式无任何 error/warning；`/`、`/about`、`/posts/18`、`/admin/login`、`/game` 全 200 且无「Failed to compile」标记。
+
+## 十二、全站背景连续化 + 动效同步（2026-10-11）
+
+要求：首屏背景提到全站固定层、消除 Hero 与正文之间的水平分界线；每个前台页面主内容区进场动效；后台只要背景不要动画；手机端保留进场动画但关闭光斑。
+
+### 分层：按布局切，不做路由判断
+
+| 层 | 挂在哪 | 内容 | 为什么 |
+| --- | --- | --- | --- |
+| 静态网格纸 | 根布局 `src/app/layout.tsx` 的 `<SiteBackground>` | `.bg-grid` 纹理，纯 CSS | 根布局覆盖 `/admin/*`、`/admin/login`、全局 404 |
+| 氛围层（会动） | `(site)` 布局的 `<SiteAtmosphere>` | 网格微光 + 两团漂浮光斑 | 后台要纸不要动画；Next 的布局读不到子路由，用布局分叉即零判断 |
+| 光标光斑 | `(site)` 布局的 `<MouseGlow>` | 跟随鼠标的柔光晕 | 从 Hero 里提出来；顺带修掉一个隐患 |
+
+**z-index 显式分层**：网格 `-z-30` → 氛围 `-z-20` → 光标光斑 `-z-10`，全部位于内容之下。不靠 DOM 顺序定层级，而且网格线永远不会压在正文上（PRD 4.4 要 WCAG AA 对比度）。
+
+**前提（已写进 globals.css 注释钉住）**：`body` 是唯一声明背景色的元素，背景会传播到 canvas、body 自身不画背景——负 z 图层才浮得出来。`html` 与任何祖先都不能再加背景色，否则整片盖住固定层。
+
+### 关键取舍
+
+1. **页面基调仍是 #ffffff**，网格层只贴纹理不加底色。分界线的根因是 Hero 自带 `bg-surface`（#fafafa）撞上白底，去掉它就统一了；**没有**把整站改成 #fafafa——那会让 `/books` `/game` `/favorites` 的 `hover:bg-surface` 行高亮、骨架屏 `bg-surface` 条、后台侧边栏（#fafafa 与 #fafafa）全部糊成一片。
+2. **光斑由 `motion.div` 循环动画改为纯 CSS keyframes**（只动 transform）：不依赖 JS，后台（无 MotionProvider）也不受牵连，客户端包不增重。
+3. **分隔线**：区块级硬线删掉（首页三块、音乐页 `border-y`、页脚 `border-t bg-surface`、文章上下篇 `border-t`），页面大标题下保留一条**两端渐隐的发丝线** `.rule-fade-t/-b/-y`（用 `background` 画，不占布局高度）；列表内部逐行细线保留——那是列表排版，不是分界。
+4. **原语统一到 motion-kit**：页头大标题 `SplitText mode="wave"` → `CharReveal`；全部 `Stagger/StaggerItem` 与 `site/reveal.tsx` 的 `Reveal` → motion-kit 的 `<Reveal delay={index * 0.08}>`；随后删除 `src/components/site/reveal.tsx` 与 `split-text.tsx`，「两个同名 Reveal」的疙瘩（§十一 提到过）就此消失。
+5. **delay 用字面 `index × 0.08` 不封顶**：`Reveal` 是 `whileInView + once`，计时从元素进入视口才开始，长列表靠后的行本来就要滚到才触发，不存在「最后一行等 1.6 秒」的问题。
+6. **明确不做**：导航栏本就是全站透明浮层（第 7 条无需改动）；首页 `PageIntro` 已是整页进场且三块各有自己的 Reveal，再包一层会三层叠加；卡片保留 `bg-background`（白卡靠 border 定义）；后台除继承背景外零改动。
+
+### 关键坑
+
+1. **`data-anim` 祖先钉住问题（§10.2.9）换了形态**：新背景层挂在布局里，**不在**任何 `data-anim` 祖先之下，所以 `[data-anim] *` 的 `!important` 够不着它们。代价是这些规则要自己写：减少动效时 `.grid-sweep` 仍 `display:none`（扫过没有静止形态），而 `.site-orb` 写 `animation: none` **停住而不是隐藏**——静止的光晕不是动效，是画面的一部分。手机端 `<768px` 两者都 `display:none`。
+2. **Turbopack 开发模式的 CSS 增量编译会给旧产物**：改完 `globals.css` 后，编译产物的 chunk 文件名 hash 不变、mtime 也更新了，但内容仍是上一版；重启 dev server 也没用，`touch` 一次才生效。**规则：每次改 CSS 后必须验证 `.next/dev/static/chunks/*._.css` 里真的有新类名**，否则会对着没生效的样式调半天。
+3. **`MouseGlow` 移出 Hero 顺带修了一个既有隐患**：它原本渲染在 `PageIntro` 内部，而 `PageIntro` 进场时带 `filter/transform`，会成为 `position: fixed` 后代的包含块——进场那 0.9 秒光标光斑是错位的。提到布局层后包含块消失。
+
+### 验证
+
+- **静态**：`npx tsc --noEmit`、`npm run lint`、`npm run build` 全过；构建 24 页，路由渲染模式（◐ / ○ / ƒ）与改动前一致。
+- **背景连续性**：滚动 0 / 700 / 2423 三个位置，网格层 `getBoundingClientRect().y` 恒为 0（不随滚动移动）；首页 Hero 与「01 最新文章」之间已无任何水平线。
+- **后台**：`/admin/login` 网格纸在、`[data-anim]` 计数 0、无光斑无微光无光标光斑——「有背景、零动画」。
+- **前台逐页**：`/`、`/about`、`/posts/1`、`/favorites`、`/code`、`/game`、`/music`、`/books` 各截一张，标题逐字浮现、列表卡片错开、无「卡在 opacity 0」的元素（自动探针：视口内 `[data-anim]` 且 opacity < 0.05 的计数）。唯一命中是各页最后一行落在视口底部 50–66px 内——那是 `-80px` 视口内缩的设计行为，再滚一点就浮现，与首页卡片原有表现一致。
+- **降级**：减少动效下光斑 `animation: none`（静止可见）、微光 `display:none`、内容全部直接呈现终态；`/posts/1` 底部的上下篇 Reveal 也会正常触发。
+- **响应式**：375 / 768 / 1440 三档 `scrollWidth === clientWidth`（无横向滚动）；光斑在 375 关闭、768 起显示。
