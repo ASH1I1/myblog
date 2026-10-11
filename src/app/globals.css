@@ -85,6 +85,13 @@
      （由字号决定，约 142px），列间距 2.5rem 不变，所以「内容列 — 竖排栏」的
      比例在任何宽度下都稳定；视口再宽，多出来的部分一律留成右侧空白，
      而不是把内容继续拉长。 */
+  /* 首页长页里的一章。scroll-margin-top 是官方给的「锚点被吸顶导航遮住」解法：
+     hash 跳转走的是原生 scrollIntoView，它认这个属性。取 6rem 与竖排栏的
+     sticky top 同值，于是跳过去时章节正好停在栏位该在的地方。 */
+  .chapter {
+    scroll-margin-top: 6rem;
+  }
+
   @media (width >= 1024px) {
     .container-showcase {
       max-width: none;

@@ -12,7 +12,7 @@ export default function SiteError({
     <div className="container-page flex flex-col items-center justify-center py-24 text-center">
       <h1 className="type-display">加载失败</h1>
       <p className="type-body mt-4 max-w-md text-muted">
-        页面出错了，请稍后重试。如果问题持续存在，欢迎通过「关于我」页面联系我。
+        页面出错了，请稍后重试。如果问题持续存在，欢迎通过首页「03 关于我」一章联系我。
       </p>
       {error.digest ? (
         <p className="type-label mt-2 text-muted">错误编号：{error.digest}</p>

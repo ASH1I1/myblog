@@ -7,12 +7,19 @@ export function Pagination({
   page,
   totalPages,
   params = {},
+  hash,
 }: {
   basePath: string;
   page: number;
   totalPages: number;
   /** 需要保留的其他查询参数（如后台的 q / status） */
   params?: Record<string, string>;
+  /**
+   * 附加的锚点（不含 #）。翻页时带上它，浏览器（与 Next）会滚到该章节：
+   * 整站合并成首页一条长页后，文章列表只是其中一章，翻页若停在原位，
+   * 用户会「列表换了、人还在半页腰上」。
+   */
+  hash?: string;
 }) {
   if (totalPages <= 1) return null;
 
@@ -23,7 +30,8 @@ export function Pagination({
     }
     if (target > 1) search.set("page", String(target));
     const qs = search.toString();
-    return qs ? `${basePath}?${qs}` : basePath;
+    const path = qs ? `${basePath}?${qs}` : basePath;
+    return hash ? `${path}#${hash}` : path;
   };
 
   // 页码窗口：当前页 ±2，首尾保留，中间省略

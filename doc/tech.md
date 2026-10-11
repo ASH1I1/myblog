@@ -4,7 +4,7 @@
 > **更新日期**：2026-10-11
 > **关联文档**：`doc/PRD.md`
 > **文档状态**：第 0~5 步已全部完成并通过验收（部署方式待定）；此后陆续加了展示板块（`/favorites` `/projects` `/game` `/music` `/books`）与两轮动效工作
-> **v1.3 修订**：路由表补上五个展示板块；「十、实现记录」补 §10.2.12~17（全站背景连续化 + 动效同步 / 展示页左对齐版式 / 页头书脊式竖排 / 内容列加宽到 72rem / 「最爱」页按年份分章 / 首页 Hero 改程序员风格）；「代码」栏目改名为「项目」并迁到 `/projects`
+> **v1.3 修订**：路由表按「整站合并成首页一条长滚动页」重写；「十、实现记录」补 §10.2.12~18（全站背景连续化 + 动效同步 / 展示页左对齐版式 / 页头书脊式竖排 / 内容列加宽到 72rem / 「最爱」页按年份分章 / 首页 Hero 改程序员风格 / 整站合并成长页）；「代码」栏目改名为「项目」
 > **v1.2 修订**：补充「十、实现记录」——关键细节、与方案的偏差、验收结果
 > **v1.1 修订**：按实际实施校准——Next.js 16.4（Turbopack + Cache Components）、middleware 更名为 proxy、缓存与鉴权模式细化
 
@@ -115,10 +115,9 @@ newblog/
 
 | 路由 | 页面 | 权限 / 参数 |
 | --- | --- | --- |
-| `/` | 首页，已发布文章倒序，9 篇/页 | 公开，`?page=2` |
+| `/` | **整站**：首屏 Hero + 八章长滚动页（最新文章 / 我的栏目 / 关于我 / 最爱 / 项目 / 游戏 / 音乐 / 著作），文章列表 9 篇/页 | 公开，`?page=2#posts` |
 | `/posts/[id]` | 文章详情（Markdown、上下篇、阅读量） | 公开；不存在或草稿 → 404 |
-| `/about` | 关于我 | 公开 |
-| `/favorites` `/projects` `/game` `/music` `/books` | 个人展示板块（最爱 / 项目 / 游戏 / 音乐 / 著作），内容全在 `src/lib/showcase.ts`，各自带主题色；`/projects` 以项目卡片为主体、技术栈列表垫后 | 公开 |
+| `/about` `/favorites` `/projects` `/game` `/music` `/books` | **已并入首页对应章节**，此处只作 307 重定向到 `/#id`（`next.config.ts` 的 `redirects()`） | 公开 |
 | `/admin/login` | 登录 | 公开；已登录访问直接跳仪表盘 |
 | `/admin` | 仪表盘（总数/已发布/草稿 + 最近 5 篇） | 仅管理员 |
 | `/admin/posts` | 文章列表/搜索/筛选/分页 | 仅管理员，`?page&q&status`，10 条/页 |
@@ -260,6 +259,7 @@ posts
 15. **展示页内容列加宽到 72rem（2026-10-11）**：封顶对象从「容器」换成「内容列」——≥1024px 时 `.container-showcase` 解封（`max-width: none`），改由 `grid-template-columns: auto minmax(0, 72rem)` 把**内容列**封在 1152px；列间距 2.5rem 与竖排栏宽度均未动，所以比例稳定，视口再宽也只是右侧多留白。1440 下右侧留白从 384px 收到 64px。**关键坑**：网格里 `auto` 尺寸的轨道在容器 `justify-content` 为默认 `normal/stretch` 时会**平分剩余空间**——容器一解封，竖排栏在 1920 下被撑到 654px、书脊线与内容列整体右移，版式崩掉；修复只需 `justify-content: start`。凡是「贴左 + 轨道自动」的网格解封，都要检查这一条。列表行右缘由 `ml-auto` 顶到行尾、随列宽自动跟随，分区间距 `mt-14`(56px) 与 <1024px 的表现均实测未变。详见 `memory-back/plan.md` 第十六节。
 16. **「最爱」页改成按年份分章（2026-10-11）**：内容区从主题分组（工具箱 / 灵感来源 / 常逛）改成 **2024 / 2025 / 2026 三个年份章节**，顶部加引导语「一些照亮过我的东西。」；行样式、右侧留白比例、左侧竖排栏与吸顶全部不动。数据结构随之改为 `FavoriteYear = { year, items }`（旧的 `FavoriteGroup = { title, links }` 已删），页面只 `favoriteYears.map(...)`，**加新条目只改 `src/lib/showcase.ts` 的对应 `items`，页面代码不用动**。年份标题用 `<h2 className="type-display font-mono">` + 列表容器上缘那条 `border-t` 当细分隔线——字号走全站唯一的「1 级字」档（lg 4.5rem / 窄屏 3rem），**没有新增中间字号档**（仓库约定「全站只用这三档」），`font-mono` 是全站渲染大数字的既有惯例。注：参考站点 `qzq.at/favorites` 因域名被网络策略拦下取不到；需求第 2 条（细线在数字下方=横排）与第 6 条（手机端横排）互相矛盾，确认后取**横排、桌面手机一致**。详见 `memory-back/plan.md` 第十七节。
 17. **首页 Hero 改程序员风格（2026-10-11）**：大标题 `bin的小站` → **`YongBin()`**（站名黑、括号克莱因蓝），副标语 → **`printf("记录，即存在。");`**（函数名/引号/分号浅灰、字符串内容克莱因蓝；`font-mono` + `type-label`，落在现有三级字号体系内）。**没有动 `motion-kit`**：标题拆成两段 `<CharReveal>`（站名一段、括号一段，`className="text-klein"` 挂外层 span 由字色继承），括号段 `delay = 站名长度 × step` 接着站名最后一字继续，逐字节奏连续；括号本就是最后两个字，「最后两个字符最后出现」由顺序本身保证。站名 `siteConfig.name` 一处改为 `"YongBin"`，标签页 / 导航 / 页脚 / 后台顶栏 / 关于页 metadata / 首页名片头像占位字母六处同步。时间规则未变（副标语 = 标题最后一字落定 + 300ms），但标题由 6 字变 9 字，绝对出场时刻由 1.5s 顺延到 1.86s。两处顺带变化未主动改：首页名片头像占位字母由 `b` 变 `Y`（它取 `siteConfig.name.charAt(0)`，而关于页取 `author.name.charAt(0)`，两者现在不一致）；`siteConfig.author.name` 仍是「bin 站长」。详见 `memory-back/plan.md` 第十八节。
+18. **整站合并成首页一条长滚动页（2026-10-11）**：首页变成长页，Hero 当封面，其后八章（`posts` / `columns` / `about` / `favorites` / `projects` / `game` / `music` / `books`），原先六个独立路由删除、改由 `next.config.ts` 的 `redirects()` 重定向到 `/#id`。**章节 id 直接等于旧路由路径**，于是页面锚点、导航、重定向三件事共用一套 id；登记表收敛在 `src/lib/chapters.ts`（页面、导航、重定向共用一处，展示五章的文案从 `showcaseNav` 派生）。每章各是一个 `.container-showcase` 网格，所以竖排栏只在自己那一章吸顶——正是「章节书签」该有的行为。四个要点：① **`redirects()` 的 destination 可以带 hash**（Next 16 文档完全没写，实测 `307 Location: /#favorites` 可行）；② **Lenis 的 `scrollTo` 自己会减掉目标的 `scroll-margin-top`**（`lenis.mjs` 第 786 行），所以避让吸顶导航只需 `.chapter { scroll-margin-top: 6rem }`，**再传 `offset` 会重复扣减**——四条滚动路径（点击锚点 / 首屏 hash / 跨页 `scrollIntoView` / 减少动效回落）统一认这一个属性；③ **不要用 Lenis 的 `anchors` 选项**（读源码：只认同 pathname 的锚点且不 `preventDefault`，会和原生跳转打架）；④ **章节高亮用滚动位置判定而非 IntersectionObserver**（判定带设在视口上部时，最后一章太短会永远滚不进去，高亮卡在上一章）。合并还顺手修掉几处由合并引入的问题：单页 8 个 `h1`（章节标题降为 `h2`、章内依次 `h3`/`h4`）、`PageIntro` 的整页缩放+模糊改为首屏专属（十来屏内容做全页光栅化 + 上万像素合成层 + 顶边漂移）、翻页带 `#posts`、导航程序化滚动期间不收起、`ChapterLink` 放行带修饰键的点击。详见 `memory-back/plan.md` 第十九节。
 
 ### 10.3 验收结果（实测）
 

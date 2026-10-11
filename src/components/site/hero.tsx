@@ -64,9 +64,16 @@ export function Hero() {
   };
 
   return (
-    <section
+    // 开场：首屏自己的「轻微缩放 + 模糊 → 清晰」。原本这层效果由 PageIntro 作用在
+    // 整页上，整站合并成一条长页后收窄到首屏——否则浏览器要为十来屏内容做一次
+    // 全页光栅化，且整页缩放会让顶边漂移、带 hash 的落点也跟着偏。
+    <motion.section
       ref={heroRef}
       onMouseMove={handleMouseMove}
+      data-anim
+      initial={{ scale: 1.012, filter: "blur(6px)" }}
+      animate={{ scale: 1, filter: "blur(0px)" }}
+      transition={{ duration: 0.9, ease: "easeOut" }}
       className="relative flex min-h-dvh items-center justify-center overflow-hidden"
     >
       {/* 层 1：拼贴装饰（最快 + 鼠标跟随，桌面端显示，不遮挡文字） */}
@@ -117,6 +124,6 @@ export function Hero() {
           </p>
         </Reveal>
       </motion.div>
-    </section>
+    </motion.section>
   );
 }

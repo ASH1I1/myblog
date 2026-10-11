@@ -1,19 +1,18 @@
-import type { Metadata } from "next";
 import { CharReveal, Reveal } from "@/components/motion-kit";
+import { Chapter } from "@/components/site/chapter";
 import { MarkdownRenderer } from "@/components/site/markdown";
 import { siteConfig } from "@/lib/site-config";
 
-export const metadata: Metadata = {
-  title: "关于我",
-  description: `关于 ${siteConfig.name} 的站长：简介、经历与联系方式。`,
-};
-
-/** 关于我（无印式三级字号）：1 级名字标题 + 2 级正文（Markdown 简介）+ 3 级标签。 */
-export default function AboutPage() {
+/**
+ * 03 关于我：整页内容（名片 + 简介 + 技能经历 + 联系方式）。
+ * 章内分区的标题用 h3 —— 章节标题（PageHeader 的竖排书签）是 h2，
+ * 整页唯一的 h1 是首屏 Hero 的站名。
+ */
+export function AboutChapter() {
   const { author, about } = siteConfig;
 
   return (
-    <div className="container-page pb-16 pt-24 md:pb-20 md:pt-28">
+    <Chapter id="about">
       {/* ProfileCard：桌面左对齐，移动端居中。整块包 Reveal，不单独动头像——
           头像带 shrink-0，若被包进 motion 元素会改变 flex 收缩行为 */}
       <Reveal>
@@ -36,26 +35,26 @@ export default function AboutPage() {
             </div>
           )}
           <div>
-            {/* 1 级字：超大极粗标题（逐字浮现，与首页站名同一套原语） */}
-            <h1 className="type-display">
+            {/* 1 级字：超大极粗标题（逐字浮现，与首页站名同一套原语）。
+                这里是章内的人名，与「个人简介 / 技能经历 / 联系方式」同级，故用 h3 */}
+            <h3 className="type-display">
               <CharReveal
                 text={author.name}
                 accentLast
                 accentClassName="text-klein"
               />
-            </h1>
+            </h3>
             <p className="type-label mt-3 text-muted">{author.tagline}</p>
           </div>
         </section>
       </Reveal>
 
       <div className="mt-14 grid gap-12 lg:grid-cols-2 lg:gap-16">
-        {/* BioSection */}
         <Reveal delay={0.08}>
           <section aria-labelledby="bio-heading">
-            <h2 id="bio-heading" className="type-label font-medium text-muted">
+            <h3 id="bio-heading" className="type-label font-medium text-muted">
               个人简介
-            </h2>
+            </h3>
             <div className="mt-5">
               <MarkdownRenderer>{about.bio}</MarkdownRenderer>
             </div>
@@ -63,13 +62,12 @@ export default function AboutPage() {
         </Reveal>
 
         <div className="space-y-12">
-          {/* SkillTimeline */}
           {about.skills.length > 0 ? (
             <Reveal delay={0.12}>
               <section aria-labelledby="skills-heading">
-                <h2 id="skills-heading" className="type-label font-medium text-muted">
+                <h3 id="skills-heading" className="type-label font-medium text-muted">
                   技能 / 经历
-                </h2>
+                </h3>
                 <ol className="mt-5 space-y-6 border-l border-border pl-6">
                   {about.skills.map((item) => (
                     <li key={`${item.period}-${item.title}`} className="relative">
@@ -78,7 +76,7 @@ export default function AboutPage() {
                         className="absolute -left-[31px] top-1.5 h-2.5 w-2.5 rounded-full bg-klein"
                       />
                       <p className="type-label text-muted">{item.period}</p>
-                      <h3 className="type-body mt-1 font-medium">{item.title}</h3>
+                      <h4 className="type-body mt-1 font-medium">{item.title}</h4>
                       {item.description ? (
                         <p className="type-label mt-1 text-muted">{item.description}</p>
                       ) : null}
@@ -89,12 +87,11 @@ export default function AboutPage() {
             </Reveal>
           ) : null}
 
-          {/* ContactList：外链新窗口打开 */}
           <Reveal delay={0.16}>
             <section aria-labelledby="contact-heading">
-              <h2 id="contact-heading" className="type-label font-medium text-muted">
+              <h3 id="contact-heading" className="type-label font-medium text-muted">
                 联系方式
-              </h2>
+              </h3>
               <ul className="mt-5 space-y-1">
                 {about.contacts.map((contact) => (
                   <li key={contact.href}>
@@ -114,6 +111,6 @@ export default function AboutPage() {
           </Reveal>
         </div>
       </div>
-    </div>
+    </Chapter>
   );
 }

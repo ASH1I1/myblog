@@ -373,3 +373,62 @@ favoriteYears: FavoriteYear[]                             // 年份从早到晚�
 - 副标题：`printf("记录，即存在。");`、12px、`Geist Mono`、底色 `rgb(113,113,122)`、字符串 `rgb(0,47,167)` ✓
 - 导航站名与 `document.title` 都是 `YongBin` ✓；1440 / 375 均无横向溢出 ✓
 - `tsc` / `lint` / `build` 全过。
+
+## 十九、整站合并成首页一条长滚动页（2026-10-11）
+
+**目标**：像一本分章节的书——首页变成长页，鼠标一路滑到底就能看完全站；导航从「跳页」改成「跳章节」并高亮当前章；旧地址重定向到对应章节。
+
+### 结构
+
+Hero 当封面，其后八章。**章节 id 直接等于旧路由路径**（`/favorites` → `#favorites`），所以「页面锚点 / 导航 / 旧地址重定向」三件事共用一套 id：
+
+| # | id | 标题 | 内容来自 |
+| --- | --- | --- | --- |
+| 01 | `posts` | 最新文章 | 原首页 01 区 |
+| 02 | `columns` | 我的栏目 | 原首页 02 区（卡片改成锚点） |
+| 03 | `about` | 关于我 | 原 `/about` 整页 |
+| 04-08 | `favorites` `projects` `game` `music` `books` | 最爱/项目/游戏/音乐/著作 | 原各自展示页 |
+
+- **每章各是一个 `.container-showcase` 网格**，所以竖排栏只在自己那一章里吸顶——翻到下一章，上一章的书签自然松开，正是「章节书签」该有的行为。
+- 章节登记表收敛到 `src/lib/chapters.ts`（id / index / label / tagline / inNav），**页面、导航、重定向共用一处**；展示五章的文案直接从 `showcaseNav` 派生，不复制。
+- 六条旧地址在 `next.config.ts` 里 `redirects()` 到 `/#id`，`permanent: false`（307，站点未上线，将来回退不至于被浏览器永久缓存）。
+
+### 四个关键结论（都是实测或读源码得来的）
+
+1. **`redirects()` 的 destination 可以带 hash**。Next 16 文档里完全没写这件事（全文搜 hash/fragment/anchor 零命中），按方案先验证：`curl -I /favorites` → `307 Location: /#favorites` ✓。所以六个路由文件直接删掉，不必留薄壳。
+
+2. **Lenis 的 `scrollTo` 自己会减掉目标的 `scroll-margin-top`**（`lenis.mjs` 第 786 行：`target -= scrollMargin + scrollPadding`）。原方案写了个 `offset: -96` 去避让吸顶导航，会和 `.chapter { scroll-margin-top: 6rem }` **重复扣减、落点高出 96px**——在看代码阶段抓到并改掉。现在四条滚动路径（点击锚点 / 首屏 hash / Next 跨页 scrollIntoView / 减少动效回落）统一认这一个属性，落点一致。实测：`/#favorites` 落位 scrollY 3491，理论值 3492。
+
+3. **不要用 Lenis 自带的 `anchors` 选项**。装的是 1.3.26，有这个选项，但读源码否掉：它的 `onClick` 只处理**同 pathname** 的锚点，而且**不调用 `preventDefault`**——浏览器会同时执行原生 hash 跳转，落点瞬间跳过去、动画白做。自己接管（`ChapterLink`）更可控。
+
+4. **章节高亮不能用 IntersectionObserver**。判定带设在视口上部时，**最后一章很短就永远滚不进那条带**，高亮会卡在上一章。改用滚动位置判定：取「最后一个 `rect.top` 越过 96px 判定线的章节」。实测滚到页底时高亮正确落在「著作」。
+
+### 由合并引入、顺手修掉的几处
+
+- **单页出现 8 个 `h1`**：章节标题（PageHeader）从 `h1` 降为 `h2`，章内分区依次 `h3`/`h4`；整页唯一的 `h1` 是首屏 Hero 的站名。标签换了、class 未动，外观零影响。
+- **`PageIntro` 的整页缩放 + 模糊**：原来只包三屏，合并后包着十来屏——`blur` 会让浏览器为整棵子树做一次光栅化、`will-change` 还会把它提升成上万像素高的合成层；而且整页 `scale(1.012)` 的变换原点在盒子中心，动画期间页面顶边会漂几十像素、带 hash 的落点跟着偏。改成：**整页只做淡入（opacity），缩放 + 模糊收窄到首屏 Hero**。
+- **`?page=` 翻页会把人留在半页腰上**：分页链接带上 `#posts`，翻完滚回本章开头（`Pagination` 加了可选 `hash` prop，后台用法不受影响）。
+- **导航收起时机**：导航现在兼任章节切换器，而它「向下滚就收起」——点完一章导航立刻消失，想切下一章还得先往回滚。加了 `isProgrammaticScroll()`（`smooth-scroll.tsx` 导出的时间窗），程序化滚动期间不收导航，并照常同步 `lastY` 免得结束那一刻被误判成跳了一大段。
+- **`ChapterLink` 会吞掉带修饰键的点击**：Ctrl/Cmd/Shift/中键一律放行，让「新标签页打开」照常工作。
+- **焦点**：`preventDefault` 会跳过浏览器默认的焦点移动，章节加了 `tabIndex={-1}`，点击后把焦点移过去（`preventScroll`），键盘用户不会被留在原地。
+- **`section` 的可访问名**：原来靠 SectionLabel 的 id + `aria-labelledby`，随 SectionLabel 一起没了；改由 PageHeader 的 `h2` 带 `${id}-title`，章节指过去。
+- **删除**：6 个路由文件 + `src/components/site/section-label.tsx`（被竖排书签取代，无引用）。
+
+### 验证（全部实测）
+
+- 八章顺序、id、标题：`posts`→`columns`→`about`→`favorites`→`projects`→`game`→`music`→`books` ✓
+- **点击锚点**：从 scrollY 0 点「最爱」，1800ms 采样得到完整缓动曲线（1821→2604→3020→…→3491），**是平滑动画不是跳转**；URL 变 `#favorites`；**章顶落在视口 96px**（吸顶导航之下）；高亮切到「最爱」。
+- **跨页**：在 `/posts/1` 点「项目」→ 回到 `/` + `#projects`，章顶同样 96px。
+- **深链**：直接打开 `/#favorites` 落位 3491（理论 3492），高亮正确。
+- **首尾高亮**：scroll 0 → 首页；滚到页底 → 著作。
+- **旧地址**：六条全部 `307 → /#id`。
+- **吸顶**：各章竖排栏 `position: sticky` 正常。
+- **减少动效**：点击后 60ms 的 scrollY 已是 3491（瞬时、无动画），章顶仍 96px；内容直接呈现终态。
+- **移动端 375**：竖排栏 `horizontal-tb` + `static`，8 章齐全，无横向溢出。
+- `tsc` / `lint` / `build` 全过；构建路由从 24 页降到 18 页（六个展示路由消失），`/` 仍是 ◐。
+
+### 已知未做
+
+- 六个展示页原来的 `metadata.title`（「最爱」等）随路由删除而消失，整页共用一个标题（首页仍是 `YongBin`）。
+- 章节切换时 `document.title` 不跟着变（未做，需求也没提）。
+- 站点上线后应把六条重定向从 307 改成 308。
