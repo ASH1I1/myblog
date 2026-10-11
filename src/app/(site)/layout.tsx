@@ -1,0 +1,34 @@
+import type { ReactNode } from "react";
+import { Footer } from "@/components/site/footer";
+import { MotionProvider } from "@/components/site/motion-config";
+import { Navbar } from "@/components/site/navbar";
+import { SmoothScroll } from "@/components/site/smooth-scroll";
+
+/**
+ * 用户端布局：顶部横向导航 + 全宽内容区 + 页脚（PRD 3.1 全局约定）。
+ * Motion 动效配置与 Lenis 平滑滚动只作用于用户端，不影响后台。
+ */
+export default function SiteLayout({ children }: { children: ReactNode }) {
+  return (
+    <MotionProvider>
+      {/* 无 JS 兜底：动画元素的初始状态是内联样式，这里用 !important 覆盖为可见 */}
+      <noscript
+        dangerouslySetInnerHTML={{
+          __html:
+            "<style>[data-anim],[data-anim] *{opacity:1!important;filter:none!important;transform:none!important;clip-path:none!important}.motion-wipe-block{display:none!important}</style>",
+        }}
+      />
+      <SmoothScroll />
+      {/* 印刷质感：全站轻微噪点（纯装饰浮层，不拦截交互） */}
+      <div
+        aria-hidden="true"
+        className="texture-noise pointer-events-none fixed inset-0 z-[60]"
+      />
+      <div className="flex min-h-full flex-1 flex-col">
+        <Navbar />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
+    </MotionProvider>
+  );
+}

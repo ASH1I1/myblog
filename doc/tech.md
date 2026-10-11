@@ -1,0 +1,259 @@
+# 个人博客系统 技术方案（Tech Design）
+
+> **文档版本**：v1.2
+> **更新日期**：2026-10-10
+> **关联文档**：`doc/PRD.md`
+> **文档状态**：第 0~5 步已全部完成并通过验收（部署方式待定）
+> **v1.2 修订**：补充「十、实现记录」——关键细节、与方案的偏差、验收结果
+> **v1.1 修订**：按实际实施校准——Next.js 16.4（Turbopack + Cache Components）、middleware 更名为 proxy、缓存与鉴权模式细化
+
+---
+
+## 一、总览
+
+**一个数据库 + 两套页面 + 一把锁。**
+
+- **前门（访客，不用登录）**：看文章——首页列表、文章详情、「关于我」。
+- **后门（博主，要登录）**：管文章——登录、仪表盘、文章的增删改查。
+- **一把锁**：只有博主能进后门，密码不能明文存储。
+
+PRD 的页面地图已经画好了骨架，本方案为其配上「地基（数据库）、管线（服务端逻辑）、血肉（页面和样式）」。
+
+## 二、拆解逻辑
+
+分三层拆，层与层之间只通过函数调用打交道：
+
+| 层 | 干什么 | 放到哪 |
+| --- | --- | --- |
+| 数据层 | 文章、管理员、会话三张表的读写 | `src/lib/db/` |
+| 服务层 | 「查已发布文章」「登录校验」「保存文章」这些脏活 | `src/lib` + `src/actions/` |
+| 页面层 | 只负责展示和交互，不写 SQL | `src/app/` + `src/components/` |
+
+好处：后续扩展（评论、搜索、标签）只需改数据层和服务层，页面基本不动。
+
+## 三、技术选型
+
+| 层 | 选型 | 为什么 |
+| --- | --- | --- |
+| 框架 | **Next.js 16（App Router + Turbopack + Cache Components）** | 一个项目同时装前门和后门；服务端渲染让详情页有独立 title/description（PRD 4.4 SEO）、首屏快；路由即文件夹，PRD 页面地图可 1:1 翻译成目录。实际锁定版本 16.4.0 |
+| 样式 | **Tailwind CSS + @tailwindcss/typography** | 断点天然是 768 / 1024，与 PRD 的移动/平板/桌面三档严丝合缝；`prose` 类负责 Markdown 正文排版 |
+| 数据库 | **SQLite（better-sqlite3 + Drizzle ORM）** | 单人博客用不上 MySQL；整个库就是一个文件，备份 = 复制粘贴；Drizzle 提供类型安全与迁移脚本 |
+| 密码 | **bcryptjs** | 纯 JS 实现，Windows 下无需编译原生模块 |
+| 登录态 | **自写轻量 Session**（sessions 表 + httpOnly Cookie，7 天） | 单管理员场景，引入 NextAuth 等重型方案纯属浪费；自写代码量小、完全可控 |
+| Markdown | **react-markdown + remark-gfm + rehype-highlight** | 默认不执行原始 HTML，天然防 XSS（满足 PRD 4.5）；代码块自动高亮 |
+| 表单校验 | **zod** | 服务端为准做长度/类型校验（标题 ≤ 100 字、摘要 ≤ 200 字等） |
+| 部署 | **Docker + SQLite 文件卷** | 见第八节；备选 Vercel + Turso |
+
+**选型原则**：不引入任何重装备（不用 Prisma、NextAuth、Redis、MySQL），所有技术为「一个人写博客」的规模服务。
+
+## 四、架构规范
+
+1. **读走「`use cache` + `cacheTag`」，写走 Server Actions**：内容读取（列表/详情）缓存在 `posts` 标签下并进入静态外壳；管理端写入完成后 `updateTag('posts')` 立即失效（read-your-writes），访客页随即看到更新。
+2. **鉴权双保险**：`proxy.ts`（Next 16 中 middleware 的继任者，运行时固定为 Node.js）拦 `/admin/*` 做跳转（「门卫」，管体验）；后台 layout 和**每个写操作的第一行**再验一次登录（「每间房再上一道锁」，管安全）。PRD 要求不能只靠前端拦路由。
+3. **Cache Components 结构纪律**：`cookies()` / `searchParams` / 未缓存查询必须位于 `<Suspense>` 边界内（或包进 `use cache`），否则构建期报错；后台为登录态动态区，在 `/admin` 布局声明 `export const instant = false`。
+4. **组件分层**：`components/site`（前台）、`components/admin`（后台）、`components/ui`（通用按钮/弹窗/标签等）。
+5. **默认 Server Component**，仅需要点击/输入交互的组件（汉堡菜单、文章表单、删除确认框）标 `"use client"`。
+6. **样式规范**：移动优先——先写小屏类名，再用 `md:` `lg:` 往宽屏加；内容区最大 1200px，正文 720px；移动端触控目标 ≥ 44×44px。
+7. **命名**：文件名 kebab-case，组件/类型 PascalCase；路由文件遵循 Next 约定（`page.tsx` / `layout.tsx`）。
+
+## 五、项目目录结构
+
+项目建在仓库根目录（`doc/` 保留放文档；根目录下误建的空 `newblog/` 子目录忽略/删除）：
+
+```
+newblog/
+├── doc/
+│   ├── PRD.md
+│   └── tech.md                    # 本文档
+├── public/                        # 静态资源
+├── data/blog.db                   # SQLite 数据库文件（gitignore）
+├── drizzle/                       # 数据库迁移 SQL
+├── scripts/seed.ts                # 种子脚本（默认管理员 + 示例文章）
+├── src/
+│   ├── app/
+│   │   ├── (site)/                # 用户端分组，共享导航+页脚
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx           # 首页 /
+│   │   │   ├── posts/[id]/page.tsx
+│   │   │   └── about/page.tsx
+│   │   ├── admin/
+│   │   │   ├── login/page.tsx
+│   │   │   ├── layout.tsx         # 后台布局 + 服务端鉴权
+│   │   │   ├── page.tsx           # 仪表盘
+│   │   │   └── posts/
+│   │   │       ├── page.tsx       # 文章列表
+│   │   │       ├── new/page.tsx
+│   │   │       └── [id]/edit/page.tsx
+│   │   ├── api/posts/[id]/view/route.ts   # 阅读量 +1（唯一 REST 接口）
+│   │   ├── not-found.tsx          # 404（含「返回首页」）
+│   │   ├── layout.tsx
+│   │   └── globals.css
+│   ├── components/
+│   │   ├── site/   navbar / footer / post-card / pagination / markdown
+│   │   ├── admin/  admin-shell / post-table / post-form / editor / stat-card
+│   │   └── ui/     button / input / dialog / badge
+│   ├── actions/    auth.ts / posts.ts          # Server Actions
+│   ├── lib/
+│   │   ├── db/     client.ts / schema.ts / queries.ts
+│   │   ├── auth/   password.ts / session.ts / guard.ts
+│   │   ├── validators.ts          # zod 校验规则
+│   │   └── site-config.ts         # 「关于我」内容（静态配置，PRD 允许）
+│   └── proxy.ts                   # 路由拦截（Next 16 中 middleware 的新名字）
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+└── README.md                      # 含默认账号说明（PRD 要求）
+```
+
+## 六、路由设计
+
+### 6.1 页面路由（PRD 地图的 1:1 实现）
+
+| 路由 | 页面 | 权限 / 参数 |
+| --- | --- | --- |
+| `/` | 首页，已发布文章倒序，9 篇/页 | 公开，`?page=2` |
+| `/posts/[id]` | 文章详情（Markdown、上下篇、阅读量） | 公开；不存在或草稿 → 404 |
+| `/about` | 关于我 | 公开 |
+| `/admin/login` | 登录 | 公开；已登录访问直接跳仪表盘 |
+| `/admin` | 仪表盘（总数/已发布/草稿 + 最近 5 篇） | 仅管理员 |
+| `/admin/posts` | 文章列表/搜索/筛选/分页 | 仅管理员，`?page&q&status`，10 条/页 |
+| `/admin/posts/new` | 新建文章 | 仅管理员 |
+| `/admin/posts/[id]/edit` | 编辑文章 | 仅管理员 |
+| 其他 | 404 页（含「返回首页」） | — |
+
+### 6.2 写操作接口（Server Actions，每个第一行均 `requireAdmin()`）
+
+| Action | 说明 |
+| --- | --- |
+| `loginAction` / `logoutAction` | 发 / 删 Session Cookie |
+| `createPostAction` / `updatePostAction` | 「保存草稿」与「发布」是同一个 action，按钮 value 决定 status |
+| `deletePostAction` | 删除文章（前端有确认弹窗） |
+
+### 6.3 阅读量计数（实现调整）
+
+- 原计划为 REST 接口 `POST /api/posts/[id]/view`，实际改为 Server Action `incrementViewsAction`（与官方文档的 view-count 模式一致）。它**刻意不触发** `updateTag("posts")`：阅读量变化不使整站缓存失效，实时数字由详情页的 `ViewCounter` 组件本地维护。
+
+### 6.4 登录流转
+
+- 未登录访问任何 `/admin/*` → 302 到登录页；
+- 登录成功 → 仪表盘；失败 → 统一提示「账号或密码错误」（不提示具体哪项错），清空密码框、保留账号；
+- 连续 5 次失败锁 10 分钟（内存记录，单实例够用）。
+
+## 七、数据库 Schema
+
+```sql
+admins
+  id            INTEGER PRIMARY KEY AUTOINCREMENT
+  username      TEXT NOT NULL UNIQUE
+  password_hash TEXT NOT NULL              -- bcrypt，禁止明文
+  created_at    TEXT NOT NULL              -- ISO-8601 UTC
+
+sessions                                    -- 登录会话，支持「退出立即失效」
+  id            TEXT PRIMARY KEY            -- 随机 32 字节 token
+  admin_id      INTEGER NOT NULL REFERENCES admins(id)
+  expires_at    TEXT NOT NULL               -- 7 天后
+  created_at    TEXT NOT NULL
+
+posts
+  id            INTEGER PRIMARY KEY AUTOINCREMENT
+  title         TEXT NOT NULL
+  summary       TEXT                        -- 空则前台截正文前 100 字
+  content       TEXT NOT NULL               -- Markdown 正文
+  cover_image   TEXT
+  status        TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published'))
+  views         INTEGER NOT NULL DEFAULT 0
+  created_at    TEXT NOT NULL
+  updated_at    TEXT NOT NULL
+  published_at  TEXT                        -- 首次发布时写入，草稿期间为 NULL
+
+索引：posts(status, published_at DESC)、posts(updated_at DESC)
+```
+
+**约定**：时间统一存 ISO-8601 UTC 文本，展示时转本地时区；开启 WAL 模式保证读写并发；「关于我」内容不进库，放 `src/lib/site-config.ts` 静态配置（PRD 允许）。
+
+## 八、实现步骤
+
+每一步做完都能跑起来、点得动，不搞「全写完再联调」。
+
+| 步骤 | 内容 | 对应验收 |
+| --- | --- | --- |
+| **0. 脚手架** ✅ | 初始化 Next.js 16 + TS + Tailwind，搭目录骨架、全局样式、容器宽度规范；构建与冒烟测试通过（2026-10-10 完成） | — |
+| **1. 数据层** ✅ | Drizzle schema、迁移脚本、seed（默认管理员用环境变量设，+ 示例文章），`db:setup` 一条命令搞定；应用启动时自动应用迁移（幂等） | 密码加密存储 |
+| **2. 登录与门锁** ✅ | bcrypt、sessions、登录页、登出、`proxy.ts` + `requireAdmin()`；含会话过期死循环修复 | 后台保护 / 错误提示 / 退出后无法访问 |
+| **3. 后台 CRUD + 仪表盘** ✅ | 列表（搜索防抖、状态筛选、分页、删除确认框）→ 表单（新建/编辑/草稿/发布、Markdown 双栏预览）→ 仪表盘统计 | PRD 3.3 全部验收项 |
+| **4. 用户端** ✅ | 首页（卡片/分页/空态/骨架屏）→ 详情（Markdown 渲染/上下篇/404/阅读量）→ 关于我 → 导航/页脚 | PRD 3.2 全部验收项 |
+| **5. 打磨验收** ✅ | 构建通过（lint 清零）；端到端验收：登录、CRUD、缓存失效、分页、筛选全部实测通过（详见第十节） | PRD 第七章整体清单 |
+
+**顺序理由**：先数据层和后台，是因为「后台能造出真数据」，前台做完立刻能用真文章验收。
+
+## 九、部署方案
+
+### 9.1 本地开发
+
+- `npm run dev`；数据库首次启动自动创建并种子化（`npm run db:setup`）。
+
+### 9.2 生产（推荐）：1 核 1G 小服务器 + Docker
+
+- 多阶段 Dockerfile，Next.js `standalone` 输出；基础镜像建议 `node:22-slim`（better-sqlite3 v13 自带全平台预编译二进制，含 linux-x64 / linuxmusl，**无需编译工具链**，alpine 亦可）；`next.config` 已配 `serverExternalPackages: ['better-sqlite3']`。
+- SQLite 文件挂载到宿主机卷 `./data`，容器重建数据不丢。
+- 容器启动时**先自动跑迁移、再起服务**。
+- Caddy 或 Nginx 反代 + HTTPS（Caddy 两行配置自动签证书）。
+- **备份：每天 cron 复制一份 `blog.db`**——SQLite 的爽点。
+
+### 9.3 备选（零运维）：Vercel + Turso
+
+- 远程 SQLite（libSQL），把 Drizzle 驱动换成 libsql 即可，代价是数据库不再在本地。
+
+### 9.4 环境变量清单
+
+| 变量 | 用途 |
+| --- | --- |
+| `DATABASE_PATH` | SQLite 文件路径（生产为 `/app/data/blog.db`） |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | 仅种子脚本使用，用于初始化默认管理员 |
+| `NODE_ENV` | 生产环境控制 Cookie `secure` 等 |
+
+### 9.5 安全清单
+
+- 生产环境 Cookie 加 `secure` + `httpOnly` + `SameSite=Lax`；
+- 登录限流（5 次失败锁 10 分钟）；
+- 所有输入服务端 zod 校验；
+- Markdown 走 react-markdown，不注入原始 HTML（防 XSS）；
+- 默认管理员账号及修改方式写入 README（PRD 要求）。
+
+---
+
+## 十、实现记录（关键细节与对方案的偏差）
+
+> 2026-10-10，第 0~5 步全部完成。本节的目的是让后来者（包括未来的我们）快速理解"为什么代码长这样"。
+
+### 10.1 与原方案的主要偏差
+
+| 原方案 | 实际实现 | 原因 |
+| --- | --- | --- |
+| 阅读量走 REST 接口 `POST /api/posts/[id]/view` | Server Action `incrementViewsAction`（`src/actions/posts.ts`） | 官方文档的标准 view-count 模式；更少一层路由，且刻意不 `updateTag`，不打穿整站缓存 |
+| `middleware.ts` 拦后台 | `src/proxy.ts`（Next 16 更名；运行时固定 Node.js） | 框架更名；只做"Cookie 是否存在"的乐观检查，真正授权在 layout/action 内 |
+| 后台布局直接放 `admin/layout.tsx` | `admin/(dashboard)/` 路由组 + `admin/login` 在外 | 登录页不能被后台布局的鉴权拦截；路由组不影响 URL |
+
+### 10.2 值得注意的实现细节
+
+1. **会话过期死循环修复**：会话过期（Cookie 在但无效）时，`requireAdmin` 会在跳转链接上带 `expired=1`，proxy 见到该标记放行登录页——否则会出现 `/admin → /admin/login → /admin` 无限反弹。登录页会显示"登录状态已过期"提示。
+2. **404 状态码取舍**：Cache Components（PPR）下，未知参数的请求会先发 App Shell 再流式补发内容，因此"不存在/草稿"文章返回 **200 + 404 页面 UI + `noindex` meta**，而不是 404 状态码。这是框架文档明确的取舍（真实 404 需在 proxy 里查库，违背 proxy"不依赖共享模块"的设计约束，故不采纳）。
+3. **构建期预渲染**：`generateStaticParams` 让已发布文章在构建时生成静态页；后台发布新文章后 `updateTag("posts")` 立即失效缓存，**访客无需等待即可看到**（已实测）。
+4. **数据库**：better-sqlite3 v13 自带全平台预编译二进制（含 Windows / linux-musl），无需编译工具链；`src/lib/db/client.ts` 在启动时自动应用 drizzle 迁移（幂等），因此 dev / build / 部署启动都不需要手工建表。
+5. **Turbopack**：数据库文件的动态路径已用 `/* turbopackIgnore: true */` 显式退出文件追踪（否则会把整个项目打进部署产物）。
+6. **ESLint（Next 16 新规则）**：`react-hooks/set-state-in-effect` 禁止在 effect 里同步 setState——抽屉/菜单的"路由变化自动收起"改为**派生状态**（`openFor === pathname`），登录失败的"清空密码并聚焦"改为**直接操作 DOM ref**，登录页的 `?next=`/`?expired=` 参数改为**服务端解析后下发**（Suspense 内流式补发）。
+7. **视图层**：无封面文章用首字占位样式；正文 `prose` 排版 + 720px 阅读列宽；表格/代码块局部横向滚动；所有触控目标 ≥44px（`min-h-11`）。
+8. **登录态页面的动态渲染（2026-10-10 修复）**：会话校验需要读取 `new Date()`（比对会话过期时间），预渲染阶段会触发 Cache Components 的 unstable value 校验（开发模式报错覆盖页面）。修复：新增 `requireAdminForRender`（内部先 `await connection()` 声明"等待真实请求"）供后台布局与 4 个页面使用；并在每个后台页面段显式声明 `export const instant = false`（Cache Components 逐个校验 Page 段，布局上的声明不覆盖子页面）。后台因此**每次请求都在服务端动态渲染**；Server Actions 继续用不带 `connection()` 的 `requireAdmin`。
+9. **动画常驻层与「减少动效」的冲突（2026-10-11 首屏动效加强时发现）**：globals.css 的降级规则是 `[data-anim], [data-anim] * { opacity: 1 !important; transform: none !important }`——它按**祖先**匹配，PageIntro 带 `data-anim`，于是 Hero 里所有后代都会被强制点亮。因此新增的两层常驻动效（网格微光 `.hero-grid-sweep`、光标光斑 `.hero-cursor-glow`）不标 `data-anim`，改为在 reduce 媒体查询里显式 `display: none`；否则 reduce 下会各留一块静态痕迹（光斑还会僵在 Hero 正中心）。同理，光标光斑的"手机端自动关闭"用 `(hover: hover) and (pointer: fine)`（JS 判定，不做随媒体查询变化的渲染分支）+ `hidden md:block`（CSS 兜底）双保险。
+10. **首屏动效的时序耦合**：副标语的出场时机由标题节奏推出（`TITLE_DELAY + (字数-1) × TITLE_STAGGER + TITLE_BLUR_DURATION + 0.3`），字号、缓动统一走 `EASE_OUT_SOFT`（`components/site/motion-config.tsx`，与 CSS 变量 `--ease-out-soft` 同值），详见 `memory-back/plan.md` 第十节。
+11. **motion-kit 组件接入（2026-10-11）**：新增 `src/components/motion-kit.tsx`（CharReveal 标题逐字 / MouseGlow 光标光斑 / Reveal 进视口淡入 / CountUp 数字滚动），首页 Hero 与文章卡片改由它驱动，同名的本地 `Reveal` 在 `page.tsx` 里以 `KitReveal` 别名引入。四个要点：① 不新装 `framer-motion`——仓库里的 `motion` v14 即其现名，`motion/react` 直接再导出它；② kit 原样的 `MouseGlow` 在 effect 里同步 `setState`，会触发本仓库启用的 `react-hooks/set-state-in-effect`（见 §10.2.6），已改为 `useSyncExternalStore` 订阅媒体查询；③ 组件必须带 `data-anim` 才能进入既有的降级体系——减少动效时直接呈现终态、无 JS 时由 layout 的 noscript 样式兜底，否则初始 `opacity:0` 会让内容永久不可见；④ 副标语的 delay 仍由标题节奏推导（CharReveal 的 step × 字数 + 单字时长 + 0.3），不是清单里的固定值。改动清单、行为说明与实测时序见 `memory-back/plan.md` 第十一节。
+
+### 10.3 验收结果（实测）
+
+- **构建**：`npm run build` 通过；`/posts/1..3` 构建期静态页，首页/后台为预期渲染模式（◐ / ƒ）；`npm run lint` 0 问题。
+- **登录**：错误密码 → 统一提示"账号或密码错误"；正确密码 → 303 + httpOnly/Secure Cookie；未登录访问后台 → 307 登录页；退出登录 → 会话即删。
+- **CRUD 端到端**（用真实 Server Action 驱动）：新建（草稿，publishedAt 为空）→ 发布（publishedAt 写入）→ 访客首页**零等待**可见 → 详情页可读。
+- **分页/筛选**：首页 9 篇/页、后台 10 条/页、草稿筛选、标题搜索（防抖）全部数值精确。
+- **内容渲染**：Markdown 标题/列表/引用/表格/图片/链接/代码高亮（hljs）全部正确；草稿在用户端任何位置不可见。
+- **数据库**：密码为 bcrypt 哈希（已校验），会话/文章/管理员三表结构符合第七节 Schema。
+- 未覆盖项：375/768/1440 三档宽度的浏览器目测（代码严格按 PRD 断点实现），建议部署前人工过一遍。

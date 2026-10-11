@@ -1,0 +1,227 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  /* 设计令牌（浅色主题；暗色模式为 PRD 约定的后续迭代） */
+  --color-background: #ffffff;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-surface: #fafafa;
+  --color-primary: #2563eb;
+  --color-primary-strong: #1d4ed8;
+  --color-danger: #dc2626;
+  /* 极简动效版补充：更浅的灰 + 统一缓动 */
+  --color-faint: #a1a1aa;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 克莱因蓝：拼贴艺术风的点缀主色（点缀，不铺满） */
+  --color-klein: #002fa7;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* 全局内容容器：最大宽度 1200px 居中；
+     移动端左右内边距 16px、平板起 24px（对齐 PRD 4.1 响应式规范） */
+  .container-page {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  @media (width >= 768px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  /* ===== 无印式三级字号体系（全站只用这三档，不做中间过渡字号） ===== */
+
+  /* 1 级：超大极粗标题（主标题 / 板块标题 / 数据主数字） */
+  .type-display {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  @media (width >= 768px) {
+    .type-display {
+      font-size: 4.5rem;
+    }
+  }
+
+  /* 2 级：中号纤细正文（个人介绍 / 文章简介等说明文字） */
+  .type-body {
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 1.85;
+  }
+
+  @media (width >= 768px) {
+    .type-body {
+      font-size: 1.125rem;
+    }
+  }
+
+  /* 3 级：极小标签字（约为正文的 2/3：导航 / 引导词 / 元信息 / 描述类辅助小字） */
+  .type-label {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.06em;
+  }
+
+  /* 印刷质感：坐标网格纹理（Hero 背景用） */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(16 16 16 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(16 16 16 / 0.045) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Hero 背景网格上的微光：一条白色为主、克莱因蓝作淡边的宽光带，扫过处网格线被提亮。
+     纯 CSS 动画（8s 一轮：前 45% 缓缓右移，其余时间停在画外）——存在感很轻，
+     减少动效时由下方 display:none 直接关掉 */
+  .hero-grid-sweep {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 43%,
+      rgb(0 47 167 / 0.04) 47%,
+      rgb(255 255 255 / 0.6) 50%,
+      rgb(0 47 167 / 0.04) 53%,
+      transparent 57%
+    );
+    transform: translate3d(-60%, 0, 0);
+    animation: hero-grid-sweep 8s ease-in-out infinite;
+  }
+
+  /* 印刷质感：轻微噪点（配合 pointer-events:none 的固定浮层使用） */
+  .texture-noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.05;
+  }
+}
+
+/* ============================ 动效（Motion） ============================ */
+
+/* Hero 网格微光：从画外左侧缓缓扫到画外右侧（平移量为自身宽度的 -60% → 60%，
+   光带正好从网格左外侧走到右外侧），后 55% 停在画外等待下一轮 */
+@keyframes hero-grid-sweep {
+  0% {
+    transform: translate3d(-60%, 0, 0);
+  }
+  45%,
+  100% {
+    transform: translate3d(60%, 0, 0);
+  }
+}
+
+/* 视差图片（由原生 JS 写入 translate3d） */
+[data-parallax] {
+  will-change: transform;
+}
+
+/* 尊重系统「减少动态效果」：
+   1) 关闭全部 CSS 过渡/动画
+   2) 用 !important 把动画元素的初始状态覆盖为终态（视觉上直接呈现最终画面，
+      不做任何随媒体查询变化的渲染分支 → 零水合风险）
+   3) JS 侧动画由 <MotionConfig reducedMotion="user"> 统一处理，
+      Lenis 平滑滚动在检测到该偏好时也不会启动 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-anim],
+  [data-anim] * {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+
+  /* 「色块遮罩擦除」的遮罩块在降级时直接隐藏 */
+  .motion-wipe-block {
+    display: none !important;
+  }
+
+  /* 网格微光扫过在降级时直接隐藏：
+     它的父层带 data-anim，会被上面的 !important 规则钉成 opacity:1 + transform:none，
+     等于把光带永久停在网格左侧——不如索性不显示 */
+  .hero-grid-sweep {
+    display: none;
+  }
+}
+
+/* 手机端关闭视差（保留进场动画）：视差层不做任何位移 */
+@media (width < 768px) {
+  [data-parallax-layer] {
+    transform: none !important;
+  }
+}
+
+/* ============================ 细滚动条 ============================ */
+/* 系统默认滚动条约 17px 宽、带箭头按钮，比较笨重；
+   统一收窄到约一个字符宽（可视滑块约 8px），圆角、低饱和配色 */
+
+/* WebKit 系（Chrome / Edge / Safari） */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  /* 2px 透明边框 + padding-box 裁切 → 视觉上的滑块只有 8px 宽 */
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--color-muted) 38%, transparent);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--color-muted) 60%, transparent);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted) 45%, transparent)
+    transparent;
+}
