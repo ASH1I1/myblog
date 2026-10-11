@@ -13,9 +13,11 @@ import { siteConfig } from "@/lib/site-config";
 
 /**
  * 首页 Hero（motion-kit 驱动 + 原有滚动动效框架）：
- * - 站名「bin的小站」：<CharReveal> 逐字自下方 30px 带模糊与轻微旋转浮现，
- *   尾字克莱因蓝并以色块擦除定格
- * - 副标语：<Reveal> 在标题最后一字落定后再延迟 300ms 淡入上移
+ * - 大标题 `YongBin()`：站名走黑色、后面那对括号走克莱因蓝，读作一次函数调用。
+ *   两段都用 <CharReveal> 逐字自下方 30px 带模糊与轻微旋转浮现，括号接在站名
+ *   最后一字之后、共用同一条节奏，因此天然最后出现
+ * - 副标语 `printf("记录，即存在。");`：等宽小字，函数名 / 引号 / 分号浅灰、
+ *   引号里的内容克莱因蓝；<Reveal> 在标题最后一字落定后再延迟 300ms 淡入上移
  * - 拼贴装饰：桌面端可见，鼠标跟随 + 滚动视差
  * - 滚动视差：拼贴装饰 / 文字两层不同速度
  *
@@ -24,12 +26,18 @@ import { siteConfig } from "@/lib/site-config";
  * 与下方区块共用同一张固定的纸 —— 这就是首屏与正文之间不再有水平分界线的原因。
  */
 
+/** 标题 = 站名 + 一对括号：读作一次函数调用，括号是克莱因蓝的后缀 */
+const TITLE_NAME = siteConfig.name;
+const TITLE_PARENS = "()";
+
 /** 标题节奏：与 <CharReveal> 对齐（step 是它的 prop；单字时长 0.6s 写死在组件内） */
 const TITLE_STEP = 0.12;
-const TITLE_CHARS = Array.from(siteConfig.name).length;
-/** 标题最后一个字落定的时刻 */
+const TITLE_CHARS = Array.from(TITLE_NAME).length + TITLE_PARENS.length;
+/** 标题最后一个字落定的时刻（括号是最后两个字，自然最后出现） */
 const TITLE_END = (TITLE_CHARS - 1) * TITLE_STEP + 0.6;
-/** 副标语 = 标题落定 + 300ms */
+/** 括号接在站名最后一个字之后，与站名共用同一条逐字节奏 */
+const PARENS_DELAY = Array.from(TITLE_NAME).length * TITLE_STEP;
+/** 副标语（那行 printf）= 标题落定 + 300ms，节奏不变 */
 const TAGLINE_DELAY = TITLE_END + 0.3;
 
 export function Hero() {
@@ -85,20 +93,27 @@ export function Hero() {
         style={{ y: titleY }}
         className="container-page relative py-24 text-center"
       >
-        {/* 视觉主角：超大细体站名（逐字自下方 30px 带模糊 + 轻微旋转浮现，尾字克莱因蓝 + 色块擦除） */}
+        {/* 视觉主角：超大细体站名，后面接一对克莱因蓝的括号（逐字自下方 30px 带模糊 +
+            轻微旋转浮现）。拆成两段 CharReveal 是为了分开上色：括号段用站名长度 × step
+            作为 delay，接着站名的最后一个字继续，整条节奏是连续的。
+            括号是最后两个字，所以「最后两个字符最后出现」由逐字顺序本身保证。 */}
         <h1 className="type-display font-light">
+          <CharReveal text={TITLE_NAME} step={TITLE_STEP} />
           <CharReveal
-            text={siteConfig.name}
+            text={TITLE_PARENS}
             step={TITLE_STEP}
-            accentLast
-            accentClassName="text-klein"
+            delay={PARENS_DELAY}
+            className="text-klein"
           />
         </h1>
 
-        {/* 副标语：等标题最后一个字落定，再延迟 300ms 淡入上移 */}
+        {/* 副标语：等标题最后一个字落定，再延迟 300ms 淡入上移（时机未变）。
+            写成一行 printf 调用：函数名、引号、分号浅灰，引号里的内容克莱因蓝 */}
         <Reveal delay={TAGLINE_DELAY}>
-          <p className="type-body mx-auto mt-7 max-w-xl text-muted">
-            {siteConfig.heroTagline}
+          <p className="type-label mx-auto mt-7 max-w-xl font-mono text-muted">
+            {'printf("'}
+            <span className="text-klein">{siteConfig.heroTagline}</span>
+            {'");'}
           </p>
         </Reveal>
       </motion.div>

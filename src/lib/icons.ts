@@ -1,6 +1,6 @@
 import {
   BookOpen,
-  CodeXml,
+  FolderOpen,
   Gamepad2,
   Heart,
   House,
@@ -16,7 +16,7 @@ import {
 export const SECTION_ICONS: Record<string, LucideIcon> = {
   "/": House,
   "/favorites": Heart,
-  "/code": CodeXml,
+  "/projects": FolderOpen,
   "/game": Gamepad2,
   "/music": Music,
   "/books": BookOpen,

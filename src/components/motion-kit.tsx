@@ -35,6 +35,7 @@ export function CharReveal({
   accentLast = false,
   accentClassName = "text-blue-600",
   className = "",
+  vertical = false,
 }: {
   text: string;
   delay?: number;
@@ -42,7 +43,11 @@ export function CharReveal({
   accentLast?: boolean;
   accentClassName?: string;
   className?: string;
+  /** 竖排标题（展示页书脊）：逐字自上方落下，方向跟着阅读方向走 */
+  vertical?: boolean;
 }) {
+  // 入场位移：横排自下方 30px 升起，竖排自上方 30px 落下
+  const enterFrom = vertical ? -30 : 30;
   // data-anim：接入本仓库的降级体系（减少动效时直接呈现终态；
   // layout.tsx 的 noscript 样式也靠它覆盖「无 JS 时初始 opacity:0 导致内容不可见」）
   return (
@@ -58,7 +63,7 @@ export function CharReveal({
               key={`${ch}-${i}`}
               aria-hidden
               className="relative inline-block overflow-hidden align-baseline will-change-[transform]"
-              initial={{ y: 30, rotate: 5 }}
+              initial={{ y: enterFrom, rotate: 5 }}
               animate={{ y: 0, rotate: 0 }}
               transition={{ duration: 0.6, delay: charDelay, ease: "easeOut" }}
             >
@@ -70,11 +75,12 @@ export function CharReveal({
               >
                 {ch === " " ? "\u00A0" : ch}
               </motion.span>
+              {/* 擦除块沿阅读方向扫过：横排向右、竖排向下 */}
               <motion.span
                 aria-hidden
                 className="motion-wipe-block absolute inset-0 bg-foreground"
-                initial={{ x: "0%" }}
-                animate={{ x: "101%" }}
+                initial={vertical ? { y: "0%" } : { x: "0%" }}
+                animate={vertical ? { y: "101%" } : { x: "101%" }}
                 transition={{ delay: charDelay, duration: 0.5, ease: "easeInOut" }}
               />
             </motion.span>
@@ -85,7 +91,7 @@ export function CharReveal({
             key={`${ch}-${i}`}
             aria-hidden
             className="inline-block"
-            initial={{ opacity: 0, y: 30, rotate: 5, filter: "blur(8px)" }}
+            initial={{ opacity: 0, y: enterFrom, rotate: 5, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, rotate: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.6, delay: charDelay, ease: "easeOut" }}
           >
@@ -188,11 +194,19 @@ export function Reveal({
   delay = 0,
   y = 24,
   className = "",
+  margin = "-80px",
 }: {
   children: ReactNode;
   delay?: number;
   y?: number;
   className?: string;
+  /**
+   * 视口内缩，决定「进入视口多少才算进入」。默认四边各缩 80px（元素要探进来
+   * 80px 才触发）；贴页面左右边缘的元素必须放宽对应那一侧，否则永远不触发、
+   * 内容会永久停在 opacity:0——展示页的竖排栏就贴在左边缘，用的就是
+   * `"0px 0px -80px 0px"`（只在下方内缩）。
+   */
+  margin?: string;
 }) {
   return (
     <motion.div
@@ -200,7 +214,7 @@ export function Reveal({
       data-anim
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
+      viewport={{ once: true, margin }}
       transition={{ duration: 0.6, delay, ease: "easeOut" }}
     >
       {children}

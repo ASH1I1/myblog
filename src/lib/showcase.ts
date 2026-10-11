@@ -1,6 +1,6 @@
 /**
  * ============================================================
- *  个人展示板块配置 —— 最爱 / 影响者 / 代码 / 游戏 / 音乐 / 著作
+ *  个人展示板块配置 —— 最爱 / 影响者 / 项目 / 游戏 / 音乐 / 著作
  *  全站所有展示内容都集中在这个文件里，替换成真实内容即可。
  *  （博客本体的站点信息仍在 src/lib/site-config.ts）
  * ============================================================
@@ -19,7 +19,8 @@ export type ShowcaseSection = {
 };
 
 export type FavoriteLink = { name: string; description: string; url: string; emoji: string };
-export type FavoriteGroup = { title: string; links: FavoriteLink[] };
+/** 收藏按年份分章：一年一章，年份从早到晚，章内按加入先后排 */
+export type FavoriteYear = { year: number; items: FavoriteLink[] };
 export type SkillGroup = { title: string; skills: string[] };
 export type Project = { name: string; emoji: string; description: string; tags: string[]; url: string };
 export type GameRecent = { name: string; platform: string; hours: string; note: string };
@@ -33,7 +34,7 @@ export type Book = { title: string; author: string; status: "已读" | "在读" 
 
 export const showcaseNav: ShowcaseSection[] = [
   { href: "/favorites", label: "最爱", emoji: "⭐", color: "#f59e0b", tagline: "收藏夹里放着我常逛、常念、常觉得好用的东西。" },
-  { href: "/code", label: "代码", emoji: "💻", color: "#7c5cff", tagline: "吃饭的本事：前端与全栈开发，偶尔写点小工具。" },
+  { href: "/projects", label: "项目", emoji: "📁", color: "#7c5cff", tagline: "做过的东西，都在这。" },
   { href: "/game", label: "游戏", emoji: "🎮", color: "#84cc16", tagline: "电子游戏是我的第二人生。" },
   { href: "/music", label: "音乐", emoji: "🎧", color: "#ec4899", tagline: "耳机里的世界，循环播放的一切。" },
   { href: "/books", label: "著作", emoji: "📚", color: "#3b82f6", tagline: "读了什么，顺便记在墙上。" },
@@ -48,37 +49,44 @@ export const heroProfile = {
     "白天写代码，晚上打游戏、听歌、读书。这个博客用来放我喜欢的一切，以及我在各个平台上的足迹。",
 };
 
-/* ---------------------------- 最爱（收藏夹） ---------------------------- */
+/* ---------------------------- 最爱（按年份分章的收藏夹） ---------------------------- */
 
-export const favorites: FavoriteGroup[] = [
+/** 内容区最顶部的引导语 */
+export const favoritesIntro = "一些照亮过我的东西。";
+
+/**
+ * 收藏条目：想加新东西，只在对应年份的 items 里加一条即可，页面代码不用动。
+ * 年份从早到晚排；同一年内按加入的先后排。
+ */
+export const favoriteYears: FavoriteYear[] = [
   {
-    title: "工具箱",
-    links: [
-      { name: "Figma", emoji: "🎨", description: "界面设计，从草图到成品", url: "https://www.figma.com" },
-      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so" },
+    year: 2024,
+    items: [
       { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com" },
-      { name: "Excalidraw", emoji: "✏️", description: "随手画架构图与白板草稿", url: "https://excalidraw.com" },
-    ],
-  },
-  {
-    title: "灵感来源",
-    links: [
-      { name: "少数派", emoji: "📰", description: "数字生活与效率工具的好内容", url: "https://sspai.com" },
-      { name: "Dribbble", emoji: "🖌️", description: "一口气能刷一小时的设计作品集", url: "https://dribbble.com" },
-      { name: "Awwwards", emoji: "🏆", description: "每年最好看的网页都在这里", url: "https://www.awwwards.com" },
-    ],
-  },
-  {
-    title: "常逛",
-    links: [
+      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so" },
       { name: "哔哩哔哩", emoji: "📺", description: "学习区和游戏区的常驻观众", url: "https://www.bilibili.com" },
       { name: "机核", emoji: "🎲", description: "游戏文化、电台与深度文章", url: "https://www.gcores.com" },
       { name: "知乎", emoji: "💬", description: "偶尔回答一些技术问题", url: "https://www.zhihu.com" },
     ],
   },
+  {
+    year: 2025,
+    items: [
+      { name: "Figma", emoji: "🎨", description: "界面设计，从草图到成品", url: "https://www.figma.com" },
+      { name: "Excalidraw", emoji: "✏️", description: "随手画架构图与白板草稿", url: "https://excalidraw.com" },
+      { name: "少数派", emoji: "📰", description: "数字生活与效率工具的好内容", url: "https://sspai.com" },
+    ],
+  },
+  {
+    year: 2026,
+    items: [
+      { name: "Dribbble", emoji: "🖌️", description: "一口气能刷一小时的设计作品集", url: "https://dribbble.com" },
+      { name: "Awwwards", emoji: "🏆", description: "每年最好看的网页都在这里", url: "https://www.awwwards.com" },
+    ],
+  },
 ];
 
-/* ---------------------------- 代码（技术栈与项目） ---------------------------- */
+/* ---------------------------- 项目（做过的项目与技术栈） ---------------------------- */
 
 export const skills: SkillGroup[] = [
   { title: "语言", skills: ["TypeScript", "Python", "Go", "SQL"] },

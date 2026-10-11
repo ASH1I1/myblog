@@ -56,6 +56,49 @@
     }
   }
 
+  /* 展示板块页版式（最爱 / 项目 / 游戏 / 音乐 / 著作）：
+     与 .container-page 相反——不居中、贴着左边站，内边距与导航内栏完全同值
+     （navbar.tsx 的 px-5 / md:px-8），于是页面大标题的左边缘与导航里站名的
+     左边缘是同一条线，任何宽度下都不漂移。
+     注意：改导航的内边距时务必同步改这里，否则这条线就断了。
+     max-width 要把内边距算进去（preflight 是 border-box），内容才正好 64rem。
+     这组 64rem 的封顶只作用于 <1024px；≥1024px 由下面那条规则接管
+     （容器不再封顶，改成只封顶内容列，见 minmax(0, 72rem)）。 */
+  .container-showcase {
+    width: 100%;
+    padding-inline: 1.25rem;
+    max-width: calc(64rem + 2.5rem);
+  }
+
+  @media (width >= 768px) {
+    .container-showcase {
+      padding-inline: 2rem;
+      max-width: calc(64rem + 4rem);
+    }
+  }
+
+  /* ≥1024px：这个容器按「竖排栏 + 内容」两列排布（见下方 .spine-* 一节），
+     所以用它的页面必须是「页头 + 一个内容 div」两个直接子元素。
+     <1024px 不生效，退回普通块级流。
+
+     宽度策略：容器解封、只把**内容列**封在 72rem（1152px）。竖排栏是 auto
+     （由字号决定，约 142px），列间距 2.5rem 不变，所以「内容列 — 竖排栏」的
+     比例在任何宽度下都稳定；视口再宽，多出来的部分一律留成右侧空白，
+     而不是把内容继续拉长。 */
+  @media (width >= 1024px) {
+    .container-showcase {
+      max-width: none;
+      display: grid;
+      grid-template-columns: auto minmax(0, 72rem);
+      /* 必须显式 start：网格里 auto 轨道的默认行为是「吸收剩余空间」，
+         容器解封后竖排栏会被撑到几百像素宽，书脊线与内容列跟着整体右移。
+         写成 start 后两列按内容尺寸靠左排，多出来的空间一律留在右侧。 */
+      justify-content: start;
+      column-gap: 2.5rem;
+      align-items: start;
+    }
+  }
+
   /* ===== 无印式三级字号体系（全站只用这三档，不做中间过渡字号） ===== */
 
   /* 1 级：超大极粗标题（主标题 / 板块标题 / 数据主数字） */
@@ -203,6 +246,55 @@
       );
     background-size: 100% 1px, 100% 1px;
     background-position: 0 0, 0 100%;
+  }
+
+  /* ===== 书脊式竖排页头（展示板块页的 PageHeader）=====
+     <1024px：编号 / 大标题 / 标语自上而下横排 + 标题下一条水平渐隐线，
+              与改动前的页头一致，没有任何 sticky；
+     ≥1024px：编号与大标题竖成一列、标语竖成第二列（左起：标题列 → 标语列），
+              页头右缘那条渐隐线竖过来，成为竖排栏与内容之间的「书脊」。
+     四个类只是语义锚点，窄屏不需要任何声明——写作模式默认就是横排。 */
+
+  @media (width >= 1024px) {
+    /* 竖排栏整体吸顶。top 取 6rem 与页面 md:py-24 的上内边距同值，
+       这样它停在自然位置上、吸顶那一刻不会上下跳。 */
+    .spine-header {
+      position: sticky;
+      top: 6rem;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 1rem;
+      padding-inline-end: 1.5rem; /* 给右缘那条竖线留出呼吸 */
+    }
+
+    /* 编号 + 大标题 同一竖列：编号在上 */
+    .spine-head {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .spine-index,
+    .spine-title,
+    .spine-tagline {
+      writing-mode: vertical-rl;
+    }
+
+    /* 页头那条渐隐线竖过来、贴右缘。这是对 .rule-fade-b 的媒体查询覆盖：
+       未分层的规则胜过 @layer components 里的定义（与本文件 .site-orb 同法）。 */
+    .spine-header.rule-fade-b {
+      background-image: linear-gradient(
+        180deg,
+        transparent,
+        var(--color-border) 12%,
+        var(--color-border) 88%,
+        transparent
+      );
+      background-size: 1px 100%;
+      background-position: 100% 0;
+    }
   }
 }
 

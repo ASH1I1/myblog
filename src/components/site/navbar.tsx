@@ -21,7 +21,7 @@ const LINKS: Array<{
     icon: ICONS["/"],
     isActive: (pathname) => pathname === "/" || pathname.startsWith("/posts/"),
   },
-  // 个人展示板块（顺序与配置一致：最爱 / 代码 / 游戏 / 音乐 / 著作）
+  // 个人展示板块（顺序与配置一致：最爱 / 项目 / 游戏 / 音乐 / 著作）
   ...showcaseNav.map((item) => ({
     href: item.href,
     label: item.label,
