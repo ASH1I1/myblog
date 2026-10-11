@@ -47,7 +47,7 @@ npm run db:seed   # 重新执行种子（会用 .env 覆盖更新管理员密码
 - 首次执行 `npm run db:seed` 时，会用 `.env` 里的 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 创建管理员（密码以 bcrypt 哈希存储，不存明文）。
 - **修改密码**：修改 `.env` 后重新执行 `npm run db:seed` 即可覆盖更新。
 - 后台入口：`/admin/login`
-- ⚠️ 仓库内 `.env` 的本地开发默认账号为 `admin / <你自己设的强口令>`，**部署到公网前务必修改**。
+- ⚠️ `.env` 不进版本库（占位值见 `.env.example`）。**请自己设一个足够强的 `ADMIN_PASSWORD`**，别沿用示例里的占位串——后台只有这一道密码。
 
 ## 文档
 
