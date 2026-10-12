@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 书封（有版权的图片，仓库是公开的）：本地与部署时自行放到 public/ 下，
+# 不进版本库。缺图时页面上是「什么都没有」，不会报错也不会留碎图。
+public/jobs-cover.jpg

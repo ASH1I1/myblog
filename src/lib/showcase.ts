@@ -19,8 +19,15 @@ export type ShowcaseSection = {
 };
 
 export type FavoriteLink = { name: string; description: string; url: string; emoji: string };
-/** 收藏按年份分章：一年一章，年份从早到晚，章内按加入先后排 */
-export type FavoriteYear = { year: number; items: FavoriteLink[] };
+/**
+ * 收藏按年份分章：一年一章，年份从早到晚，章内按加入先后排。
+ * `cover` 可选：该年的书封/封面装饰图（public/ 下的路径），没有就不渲染。
+ */
+export type FavoriteYear = {
+  year: number;
+  items: FavoriteLink[];
+  cover?: string;
+};
 export type SkillGroup = { title: string; skills: string[] };
 export type Project = { name: string; emoji: string; description: string; tags: string[]; url: string };
 export type GameRecent = { name: string; platform: string; hours: string; note: string };
@@ -56,9 +63,20 @@ export const favoritesIntro = "一些照亮过我的东西。";
 
 /**
  * 收藏条目：想加新东西，只在对应年份的 items 里加一条即可，页面代码不用动。
- * 年份从早到晚排；同一年内按加入的先后排。
+ *
+ * 这里按「从早到晚」维护（方便按时间往下追加），**页面显示时再倒排成从新到旧**
+ * （见 favorites-chapter.tsx）。所以新增一年时插在哪都无所谓，它都会自动出现在最前面。
+ * 同一年内按加入的先后排。
  */
 export const favoriteYears: FavoriteYear[] = [
+  {
+    year: 2011,
+    // 书封装饰：图放在 public/jobs-cover.jpg，缺图时这里什么都不渲染
+    cover: "/jobs-cover.jpg",
+    items: [
+      { name: "乔布斯传", emoji: "🍎", description: "stay hungry, stay foolish.", url: "https://book.douban.com/subject/6798611/" },
+    ],
+  },
   {
     year: 2024,
     items: [
