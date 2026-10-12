@@ -18,10 +18,23 @@ export type ShowcaseSection = {
   tagline: string;
 };
 
-export type FavoriteLink = { name: string; description: string; url: string; emoji: string };
+/**
+ * 收藏条目。
+ * `note` 可选：点开书封灯箱后，右侧正文里那段「你和这本书的故事」；
+ * 不填时灯箱里就不出现这一段（条目本身照常显示）。
+ */
+export type FavoriteLink = {
+  name: string;
+  description: string;
+  url: string;
+  emoji: string;
+  note?: string;
+};
 /**
  * 收藏按年份分章：一年一章，年份从早到晚，章内按加入先后排。
- * `cover` 可选：该年的书封/封面装饰图（public/ 下的路径），没有就不渲染。
+ * `cover` 可选：该年的书封（public/ 下的路径）。有它才渲染那张相框，
+ * 点开后灯箱用的是 `items` 里**第一条**的书名/标语/短文/链接
+ * （见 cover-lightbox.tsx）；没有 cover 就整块不渲染。
  */
 export type FavoriteYear = {
   year: number;
@@ -71,10 +84,17 @@ export const favoritesIntro = "一些照亮过我的东西。";
 export const favoriteYears: FavoriteYear[] = [
   {
     year: 2011,
-    // 书封装饰：图放在 public/jobs-cover.jpg，缺图时这里什么都不渲染
+    // 书封（相框 + 灯箱）：图放在 public/jobs-cover.jpg
     cover: "/jobs-cover.jpg",
     items: [
-      { name: "乔布斯传", emoji: "🍎", description: "stay hungry, stay foolish.", url: "https://book.douban.com/subject/6798611/" },
+      {
+        name: "乔布斯传",
+        emoji: "🍎",
+        description: "stay hungry, stay foolish.",
+        url: "https://book.douban.com/subject/6798611/",
+        // 灯箱里的短文：先占位，你想写什么自己改
+        note: "写一段你和这本书的故事。",
+      },
     ],
   },
   {
