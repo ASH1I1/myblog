@@ -68,11 +68,13 @@ export function CoverFrame({
       src={src}
       alt={`《${title}》封面`}
       loading="lazy"
-      // 写死书封的固有尺寸：图是懒加载的，没有这两个数的话浏览器在加载完成前
-      // 算不出宽高比，相框会先塌成一条 18px 的竖线再「啪」地撑开
-      width={444}
-      height={590}
-      className="block h-[15rem] w-auto rounded-[3px] md:h-[18rem]"
+      // 横幅「裁切取景」：框内 342×202，加 8px 内边距与 1px 描边后整框正好 360×220；
+      // 窄屏靠 max-w-full 收窄、高度跟着 aspect-ratio 走，所以比例不会变形。
+      // （宽高比直接写在样式里，就不必再写 width/height 属性兜加载前的占位了。）
+      // object-cover + object-position 只取封面的一条横带：42% 让可见区域落在眼睛上，
+      // 顶部的书名与底部的出版社社徽都裁到框外。想上下微调只改第二个百分数
+      // （数值越小取景越往上），第一个 50% 是左右居中，不用动。
+      className="block aspect-[342/202] w-[342px] max-w-full rounded-[3px] object-cover object-[50%_42%]"
     />
   );
 
