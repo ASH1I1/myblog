@@ -1,12 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+/** 相框的定位（桌面上贴区块右半边垂直居中；窄屏流内居中）与外观，两条路径共用。
+ *  外层 pointer-events-none + 本体 pointer-events-auto 是必须的：外框在桌面上是
+ *  `inset-y-0 w-1/2` 的绝对定位盒子，铺满区块右半边整个高度又排在内容之后，
+ *  不关掉指针事件就会把右半边整条带上的点击（比如条目行中段）全吃掉。 */
+const FRAME_WRAPPER =
+  "pointer-events-none mt-10 flex justify-center md:absolute md:inset-y-0 md:right-8 md:mt-0 md:w-1/2 md:items-center md:justify-end";
+const FRAME_BOX =
+  "pointer-events-auto rounded-lg border border-border bg-white p-2 shadow-[0_22px_45px_-30px_rgba(16,16,16,0.6)] transition-transform duration-500 ease-out hover:scale-[1.03]";
+
 /**
- * 「最爱」章里那张书封：装裱好的相框（可点），点开后是居中的灯箱大图。
+ * 「最爱」章里那张书封：装裱好的相框。点下去做什么，按条目的 url 分两条路：
  *
- * **为什么必须走 portal**：首屏的 PageIntro / Reveal 都是 motion 容器，动画期间
+ * - **站内路径**（以 `/` 开头，比如这篇文章 `/posts/19`）：整块相框就是一个
+ *   `<Link>`，点了直接进文章页。
+ * - **外部链接**：点开居中的灯箱大图（封面全图 + 书名 / 标语 / 短文 / 「去豆瓣看」）。
+ *   2011 这条改走站内文章之后，灯箱这条路暂时没有条目在用，但代码留着——
+ *   将来给某一年挂个外链书页就能直接用。
+ *
+ * **灯箱为什么必须走 portal**：首屏的 PageIntro / Reveal 都是 motion 容器，动画期间
  * 会给祖先留下 `transform` —— 那会让 `position: fixed` 以那个祖先为包含块；
  * 年份区块自己又带 `overflow-hidden`，会把这个定位层裁掉。挂到 body 上两条都躲开。
  * 只在 `open` 之后渲染，所以不存在「服务端没有 document」这一档事。
@@ -28,7 +44,7 @@ export function CoverFrame({
   tagline: string;
   /** 灯箱里的短文，可缺省（见 FavoriteLink.note） */
   note?: string;
-  /** 「去豆瓣看」的落点：用条目自己的链接 */
+  /** 条目自己的链接：站内路径走 `<Link>`，外链才弹灯箱 */
   href: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -46,29 +62,42 @@ export function CoverFrame({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  const cover = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={`《${title}》封面`}
+      loading="lazy"
+      // 写死书封的固有尺寸：图是懒加载的，没有这两个数的话浏览器在加载完成前
+      // 算不出宽高比，相框会先塌成一条 18px 的竖线再「啪」地撑开
+      width={444}
+      height={590}
+      className="block h-[15rem] w-auto rounded-[3px] md:h-[18rem]"
+    />
+  );
+
+  // 站内跳转：相框本身就是链接，不弹灯箱（灯箱留给「点开看大图」的外链场景）
+  if (href.startsWith("/")) {
+    return (
+      <div className={FRAME_WRAPPER}>
+        <Link href={href} aria-label={`读《${title}》`} className={`block ${FRAME_BOX}`}>
+          {cover}
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* 相框：白底 + 1px 描边 + 8px 内边距 + 小圆角 + 柔和投影，像装裱好的照片。
-          桌面上贴区块右半边、垂直居中（区块自身 relative）；手机上右半边没有
-          空间，改为在条目下方居中，高度也收一档。 */}
-      <div className="mt-10 flex justify-center md:absolute md:inset-y-0 md:right-8 md:mt-0 md:w-1/2 md:items-center md:justify-end">
+      {/* 相框：白底 + 1px 描边 + 8px 内边距 + 小圆角 + 柔和投影，像装裱好的照片 */}
+      <div className={FRAME_WRAPPER}>
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label={`放大看《${title}》封面`}
-          className="rounded-lg border border-border bg-white p-2 shadow-[0_22px_45px_-30px_rgba(16,16,16,0.6)] transition-transform duration-500 ease-out hover:scale-[1.03]"
+          className={FRAME_BOX}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={`《${title}》封面`}
-            loading="lazy"
-            // 写死书封的固有尺寸：图是懒加载的，没有这两个数的话浏览器在加载完成前
-            // 算不出宽高比，相框会先塌成一条 18px 的竖线再「啪」地撑开
-            width={444}
-            height={590}
-            className="block h-[15rem] w-auto rounded-[3px] md:h-[18rem]"
-          />
+          {cover}
         </button>
       </div>
 

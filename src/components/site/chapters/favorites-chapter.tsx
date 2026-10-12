@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Reveal } from "@/components/motion-kit";
 import { Chapter } from "@/components/site/chapter";
 import { CoverFrame } from "@/components/site/cover-lightbox";
@@ -18,7 +19,7 @@ export function FavoritesChapter() {
       </Reveal>
 
       {years.map((group) => {
-        // 书封挂在年份上（FavoriteYear.cover），灯箱里的书名/标语/短文/链接取该组第一条
+        // 书封挂在年份上（FavoriteYear.cover），那条目的书名/标语/短文/链接取该组第一条
         // —— 目前只有 2011 有 cover，也就只有那一条（多条目时怎么取见 showcase.ts 注释）
         const featured = group.items[0];
         return (
@@ -39,30 +40,49 @@ export function FavoritesChapter() {
             </Reveal>
 
             <div className="mt-5 border-t border-border">
-              {group.items.map((link, index) => (
-                <Reveal key={link.name} delay={index * 0.08}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-baseline gap-4 border-b border-border py-5 transition-colors duration-300 ease-out hover:bg-surface"
-                  >
+              {group.items.map((link, index) => {
+                // 条目分两种：站内路径（以 `/` 开头）走 <Link>，当前标签页进文章页，
+                // 右上角用 →（站内语义）；外链仍开新窗口，图标保持 ↗。
+                const internal = link.url.startsWith("/");
+                const rowClass =
+                  "group flex items-baseline gap-4 border-b border-border py-5 transition-colors duration-300 ease-out hover:bg-surface";
+                const row = (
+                  <>
                     <span className="type-body font-medium">{link.name}</span>
                     <span className="type-label text-muted">{link.description}</span>
                     <span
                       aria-hidden="true"
                       className="type-label ml-auto text-faint transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
                     >
-                      ↗
+                      {internal ? "→" : "↗"}
                     </span>
-                  </a>
-                </Reveal>
-              ))}
+                  </>
+                );
+
+                return (
+                  <Reveal key={link.name} delay={index * 0.08}>
+                    {internal ? (
+                      <Link href={link.url} className={rowClass}>
+                        {row}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={rowClass}
+                      >
+                        {row}
+                      </a>
+                    )}
+                  </Reveal>
+                );
+              })}
             </div>
 
-            {/* 书封相框（可点开灯箱）：桌面上浮在区块右半边、垂直居中——绝对定位，
-                所以排在内容之后也不挡文字；右缘留 32px，免得压住条目行右上角那个 ↗。
-                窄屏则是一块流内内容，排在条目下方居中。 */}
+            {/* 书封相框：桌面上浮在区块右半边、垂直居中——绝对定位，所以排在内容之后
+                也不挡文字；右缘留 32px，免得压住条目行右上角那个箭头。
+                点下去是进文章页还是弹灯箱，由条目的 url 决定（见 cover-lightbox.tsx）。 */}
             {group.cover && featured ? (
               <CoverFrame
                 src={group.cover}
