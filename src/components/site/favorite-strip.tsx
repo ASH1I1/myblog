@@ -60,7 +60,7 @@ export function FavoriteStrip({
             alt=""
             aria-hidden="true"
             loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[1.2] object-cover object-[50%_48%]"
+            className="absolute inset-0 h-full w-full scale-[1.2] object-cover object-[50%_49.5%]"
           />
         </span>
       ) : null}
