@@ -340,6 +340,41 @@
   }
 }
 
+/* 文章预览面板的进场（见 post-preview.tsx）：
+   桌面从右侧滑入、窄屏从底部升起 —— 两个方向各一条，互斥地挂在 sm / max-sm 上。
+   同样只动 transform 与 opacity，减少动效时由全局覆盖压到 0.01ms（等于直出）。 */
+@keyframes post-preview-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes post-preview-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 面板开着时切到另一篇：里面那层内容轻淡入（不做位移，免得连读时上下晃） */
+@keyframes post-preview-swap {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* 视差图片（由原生 JS 写入 translate3d） */
 [data-parallax] {
   will-change: transform;

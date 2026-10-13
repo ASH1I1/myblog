@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { CountUp, Reveal } from "@/components/motion-kit";
 import { Chapter } from "@/components/site/chapter";
-import { PostCard } from "@/components/site/post-card";
 import { PostListSkeleton } from "@/components/site/post-list-skeleton";
+import { PostsGrid } from "@/components/site/posts-grid";
 import { Pagination } from "@/components/ui/pagination";
 import { getPublishedPostsPage } from "@/lib/db/queries";
 
@@ -49,14 +49,10 @@ async function PostList({ searchParams }: { searchParams: SearchParams }) {
 
       {/* 三列网格（平板两列、手机单列），卡片逐张错开浮现（每张 80ms）
           延迟按字面 index × 80ms：Reveal 是 whileInView + once，
-          计时只在卡片进入视口时才开始，折叠线以下的行本来就要滚到才触发 */}
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {data.items.map((post, index) => (
-          <Reveal key={post.id} delay={index * 0.08} className="h-full">
-            <PostCard post={post} />
-          </Reveal>
-        ))}
-      </div>
+          计时只在卡片进入视口时才开始，折叠线以下的行本来就要滚到才触发。
+          网格与「点开看预览」的面板共享选中状态，所以整块交给客户端的 PostsGrid，
+          数据还是这里查好（缓存里的 PostCardData[]）传进去。 */}
+      <PostsGrid posts={data.items} />
 
       <Reveal className="mt-12">
         {/* 带上 #posts：翻页后滚回本章开头，而不是停在半页腰上 */}
