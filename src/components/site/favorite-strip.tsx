@@ -19,20 +19,32 @@ export function FavoriteStrip({
   title,
   description,
   image,
+  badge,
 }: {
   href: string;
   title: string;
   description: string;
   /** 配图（public/ 下的路径；暂时是 public/favorites/ 里的占位图）。没有就只显示文字 */
   image?: string;
+  /** 名字后面那枚小徽标（例如「新增」），不填就没有 */
+  badge?: string;
 }) {
   const className =
     "group relative flex h-[4.65rem] items-center gap-4 overflow-hidden rounded-lg border-b border-border bg-white/40 pl-5 transition-colors duration-300 ease-out hover:bg-white/75";
   const inner = (
     <>
-      {/* 左：名字（黑）与紧跟其后的浅灰小字描述，沿条高垂直居中。
+      {/* 左：名字（黑）+ 可选小徽标，紧跟其后的浅灰小字描述，沿条高垂直居中。
+          名字与徽标包在一个组里（组内 8px），这样徽标贴住名字、
+          而名字组与描述之间仍是条上的 16px 间距。
           描述在窄屏（<640）隐藏，否则整条在手机上会被挤到溢出。 */}
-      <span className="type-body relative font-medium">{title}</span>
+      <span className="relative flex items-center gap-2">
+        <span className="type-body font-medium">{title}</span>
+        {badge ? (
+          <span className="type-label rounded-full bg-klein/10 px-1.5 py-0.5 text-klein">
+            {badge}
+          </span>
+        ) : null}
+      </span>
       <span className="type-label relative hidden text-muted sm:inline">
         {description}
       </span>
