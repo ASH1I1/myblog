@@ -94,7 +94,7 @@ export function PostPreviewPanel({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-t-3xl border border-border bg-white/80 shadow-[0_-12px_50px_-24px_rgba(16,16,16,0.4)] backdrop-blur-xl max-sm:animate-[post-preview-in-up_0.28s_ease-out] sm:inset-x-auto sm:top-6 sm:right-6 sm:bottom-6 sm:max-h-none sm:w-[400px] sm:rounded-2xl sm:animate-[post-preview-in-right_0.28s_ease-out]"
+      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-t-3xl border border-border bg-[linear-gradient(to_top,rgba(233,237,243,0.9),rgba(255,255,255,0.9))] shadow-[0_-12px_50px_-24px_rgba(16,16,16,0.4)] backdrop-blur-xl max-sm:animate-[post-preview-in-up_0.28s_ease-out] sm:inset-x-auto sm:top-1/4 sm:right-6 sm:bottom-auto sm:h-1/2 sm:max-h-none sm:w-[300px] sm:rounded-2xl sm:animate-[post-preview-in-right_0.28s_ease-out]"
     >
       {/* 顶部紫蓝渐变装饰条 */}
       <span
@@ -117,7 +117,7 @@ export function PostPreviewPanel({
       <div
         key={post.id}
         data-lenis-prevent
-        className="min-h-0 flex-1 animate-[post-preview-swap_0.24s_ease-out] overflow-y-auto overscroll-contain p-6 pt-8 sm:p-7"
+        className="min-h-0 flex-1 animate-[post-preview-swap_0.24s_ease-out] overflow-y-auto overscroll-contain p-5 pt-6"
       >
         {post.coverImage ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -139,15 +139,16 @@ export function PostPreviewPanel({
           <span>{post.views} 次阅读</span>
         </p>
 
-        <h3 id={titleId} className="type-display mt-3 text-3xl">
+        <h3 id={titleId} className="type-display mt-3 text-2xl leading-snug">
           {post.title}
         </h3>
 
-        <p className="type-body mt-4 text-muted">{post.summary}</p>
+        {/* 面板变小了：摘要最多三行、超出省略；再长的正文交给「阅读全文」 */}
+        <p className="type-body mt-3 line-clamp-3 text-muted">{post.summary}</p>
 
         <Link
           href={`/posts/${post.id}`}
-          className="type-label mt-7 inline-flex min-h-11 items-center justify-center self-start rounded-full bg-klein px-6 font-medium text-white transition-opacity duration-300 ease-out hover:opacity-85"
+          className="type-label mt-5 inline-flex min-h-11 items-center justify-center self-start rounded-full bg-klein px-6 font-medium text-white transition-opacity duration-300 ease-out hover:opacity-85"
         >
           阅读全文 →
         </Link>
