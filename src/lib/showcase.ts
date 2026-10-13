@@ -114,11 +114,10 @@ export const favoriteYears: FavoriteYear[] = [
         emoji: "🎙️",
         description: "2024 的第一条：《与自由的距离》（E33）",
         url: "https://www.xiaoyuzhoufm.com/episode/65dd839000ca19a600292454",
-        // 配图用的是这档播客在小宇宙的封面（320×320 方图）。
-        // 方图丢进 29% 宽的图区若用默认的 cover 会被裁掉大半，所以这条声明 contain
-        // —— 整张封面按条高缩放、贴右缘完整显示。
+        // 配图用的是这档播客在小宇宙的封面（320×320 方图），**与书封同一套处理**：
+        // 走默认的 cover —— 按图区裁成横向长条、叠 scale 等比放大，只留封面中间
+        // 那条渐变环形（上下裁掉），左右用 mask 化开、没有边框和阴影，融进网格底。
         image: "/favorites/wurenzhixiao-cover.jpg",
-        imageFit: "contain",
         badge: "新增",
       },
       { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com", image: "/favorites/github.svg" },
