@@ -261,6 +261,26 @@
     background-position: 0 0, 0 100%;
   }
 
+  /* 单向渐隐发丝线：左端清楚、右端化开（用在「最爱」里带书封那一年，
+     线条朝右侧的人像卡片淡出，不会硬生生撞上卡片 —— 见 favorites-chapter.tsx）。
+     上下两条**必须分别画在各自元素上**：底下那条要画在条目行自己身上，
+     否则鼠标移到行上时，行的 hover 底色会盖掉容器画的线
+     （background-image 画在自身 background-color 之上，所以画在自己身上就没事）。 */
+  .rule-fade-right-t,
+  .rule-fade-right-b {
+    background-image: linear-gradient(90deg, var(--color-border), transparent);
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+  }
+
+  .rule-fade-right-t {
+    background-position: 0 0;
+  }
+
+  .rule-fade-right-b {
+    background-position: 0 100%;
+  }
+
   /* ===== 书脊式竖排页头（展示板块页的 PageHeader）=====
      <1024px：编号 / 大标题 / 标语自上而下横排 + 标题下一条水平渐隐线，
               与改动前的页头一致，没有任何 sticky；

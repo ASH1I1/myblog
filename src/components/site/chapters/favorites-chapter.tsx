@@ -41,13 +41,26 @@ export function FavoritesChapter() {
               <h3 className="type-display font-mono">{group.year}</h3>
             </Reveal>
 
-            <div className="mt-5 border-t border-border">
+            {/* 条目区。带书封那一年（2011）有两处不同，其余年份照旧：
+                1) 上下两条分隔线改成「左实右虚」的单向渐隐线，朝右侧的卡片淡出；
+                2) 整块在 md 起垂直居中于区块 —— 区块里卡片也是垂直居中的，
+                   于是这一行文字与卡片的中线齐平（窄屏卡片在流内，不参与对齐）。 */}
+            <div
+              className={cn(
+                "mt-5",
+                group.cover
+                  ? "rule-fade-right-t md:absolute md:inset-x-0 md:top-1/2 md:-translate-y-1/2 md:mt-0"
+                  : "border-t border-border",
+              )}
+            >
               {group.items.map((link, index) => {
                 // 条目分两种：站内路径（以 `/` 开头）走 <Link>，当前标签页进文章页，
                 // 右上角用 →（站内语义）；外链仍开新窗口，图标保持 ↗。
                 const internal = link.url.startsWith("/");
-                const rowClass =
-                  "group flex items-baseline gap-4 border-b border-border py-5 transition-colors duration-300 ease-out hover:bg-surface";
+                const rowClass = cn(
+                  "group flex items-baseline gap-4 py-5 transition-colors duration-300 ease-out hover:bg-surface",
+                  group.cover ? "rule-fade-right-b" : "border-b border-border",
+                );
                 const row = (
                   <>
                     <span className="type-body font-medium">{link.name}</span>
