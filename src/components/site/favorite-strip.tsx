@@ -46,7 +46,9 @@ export function FavoriteStrip({
           图 h-full + object-fit: cover 贴满，再叠 scale-[1.2] 等比放大 —— 只缩放不拉伸，
           超出的部分由图区那层 overflow-hidden 裁掉，不越条高。
           对 2011 那张书封，这组数是按几何配的「双眼 + 圆框眼镜」取景
-          （可见横带 = 444×条高/(图区宽×scale) ≈ 84 源像素，眼镜整副约 75）；
+          （可见横带 = 444×条高/(图区宽×scale) ≈ 84 源像素，眼镜整副约 75；
+          object-position 的纵向 47% 把这条带子对到眼睛上 —— 眼睛正落在条的垂直中心；
+          ⚠️ 这个百分数越小＝取景窗口越往画面上方取，框里的内容反而越往下沉）；
           占位图是与图区同比例的宽图，裁切对它们不生效，视觉上自然衔接。
           左右渐隐的 mask 挂在图区上（图区宽度的 8%），把最外侧化开。
           图区靠 ml-auto 顶到条的最右缘（条本身没有右内边距），右侧不留空白。 */}
@@ -58,7 +60,7 @@ export function FavoriteStrip({
             alt=""
             aria-hidden="true"
             loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[1.2] object-cover object-[50%_45%]"
+            className="absolute inset-0 h-full w-full scale-[1.2] object-cover object-[50%_46%]"
           />
         </span>
       ) : null}
