@@ -28,6 +28,8 @@ export function PostCard({
   return (
     <article
       className="group h-full"
+      // 预览面板据此认出「这一下点在触发源上」：点卡片只换预览项，不关面板
+      data-preview-trigger=""
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >

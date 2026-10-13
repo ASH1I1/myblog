@@ -4,6 +4,12 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/motion-kit";
 import { ChapterLink } from "@/components/site/chapter-link";
+import {
+  PreviewPanel,
+  PREVIEW_CLOSE_DELAY,
+  type PreviewItem,
+} from "@/components/site/preview-panel";
+import { chapterMeta } from "@/lib/chapters";
 import { SECTION_ICONS } from "@/lib/icons";
 import { showcaseNav } from "@/lib/showcase";
 
@@ -142,8 +148,45 @@ export function SectionIndex() {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [trace, setTrace] = useState<Trace | null>(null);
   const [phase, setPhase] = useState<Phase>("preview");
+  const [preview, setPreview] = useState<PreviewItem | null>(null);
+  const closeTimer = useRef<number | null>(null);
 
   const hideTrace = useCallback(() => setTrace(null), []);
+
+  /* ---- 预览面板：与文章列表同款（同一组件、同一延迟收起的手感） ---- */
+
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, []);
+
+  const openPreview = useCallback(
+    (item: PreviewItem) => {
+      // 触屏不弹（tap 会合成 mouseenter）；减少动效只是不画折线，面板照给
+      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+      cancelClose();
+      setPreview(item);
+    },
+    [cancelClose],
+  );
+
+  const scheduleClose = useCallback(() => {
+    cancelClose();
+    closeTimer.current = window.setTimeout(() => {
+      setPreview(null);
+      closeTimer.current = null;
+    }, PREVIEW_CLOSE_DELAY);
+  }, [cancelClose]);
+
+  const closeNow = useCallback(() => {
+    cancelClose();
+    setPreview(null);
+  }, [cancelClose]);
+
+  // 卸载时清掉未触发的定时器
+  useEffect(() => cancelClose, [cancelClose]);
 
   const showTrace = useCallback(
     (id: string, cardEl: HTMLElement, index: number) => {
@@ -209,10 +252,23 @@ export function SectionIndex() {
                 <Reveal key={item.href} delay={index * 0.08} className="h-full">
                   <div
                     className="h-full"
-                    onMouseEnter={(event) =>
-                      showTrace(id, event.currentTarget, index)
-                    }
-                    onMouseLeave={hideTrace}
+                    // 预览面板据此认出「这一下点在触发源上」：点卡片只换预览项，不关面板
+                    data-preview-trigger=""
+                    onMouseEnter={(event) => {
+                      showTrace(id, event.currentTarget, index);
+                      const m = chapterMeta(id);
+                      openPreview({
+                        meta: `第 ${m.index} 章`,
+                        title: m.label,
+                        summary: m.tagline ?? item.tagline,
+                        // 进这一章：直接给锚点，和旧路由的重定向落点一致
+                        action: { href: `/#${id}`, label: "进入这一章 →" },
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      hideTrace();
+                      scheduleClose();
+                    }}
                   >
                     <ChapterLink
                       id={id}
@@ -269,6 +325,16 @@ export function SectionIndex() {
           </motion.svg>
         ) : null}
       </div>
+
+      {/* 分类卡片的预览面板：与文章列表用同一个组件（样式完全一致） */}
+      {preview ? (
+        <PreviewPanel
+          item={preview}
+          onClose={closeNow}
+          onPointerEnter={cancelClose}
+          onPointerLeave={scheduleClose}
+        />
+      ) : null}
     </div>
   );
 }

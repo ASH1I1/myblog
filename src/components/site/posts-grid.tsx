@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Reveal } from "@/components/motion-kit";
 import { PostCard } from "@/components/site/post-card";
-import { PostPreviewPanel } from "@/components/site/post-preview";
+import { PreviewPanel, PREVIEW_CLOSE_DELAY, type PreviewItem } from "@/components/site/preview-panel";
 import type { PostCardData } from "@/lib/db/queries";
+import { formatDate } from "@/lib/format";
 
 /**
  * 文章卡片网格 + 右侧预览面板。
@@ -12,8 +13,7 @@ import type { PostCardData } from "@/lib/db/queries";
  * 触发方式：**鼠标悬浮**卡片就预览（面板浮在右侧），移开约 180ms 后收起。
  * - 为什么延迟：快速从一排卡片上扫过时，鼠标会连续穿过好几张，
  *   每次都立刻开合会闪跳；留一个可取消的定时器，落在下一张卡片上就换内容、不闪。
- * - 鼠标从卡片**移到面板上**也不关：面板自己的 pointerenter 会取消那个定时器，
- *   否则想点面板里的「阅读全文」就得跟定时器赛跑。
+ * - 鼠标从卡片**移到面板上**也不关：面板自己的 pointerenter 会取消那个定时器。
  * - 左右键点击卡片：照旧进文章详情页（卡片就是个普通 <Link>，没有任何拦截）。
  *
  * 触屏没有 hover：`(hover: hover) and (pointer: fine)` 不成立时干脆不挂鼠标事件
@@ -40,8 +40,15 @@ function getServerSnapshot() {
   return false;
 }
 
-/** 移开后延迟多久收起预览（毫秒） */
-const CLOSE_DELAY = 180;
+/** 文章 → 面板内容（四段：小字 / 标题 / 摘要 / 按钮） */
+export function postToPreview(post: PostCardData): PreviewItem {
+  return {
+    meta: `${formatDate(post.publishedAt)} · ${post.views} 次阅读`,
+    title: post.title,
+    summary: post.summary,
+    action: { href: `/posts/${post.id}`, label: "阅读全文 →" },
+  };
+}
 
 export function PostsGrid({ posts }: { posts: PostCardData[] }) {
   const canHover = useSyncExternalStore(
@@ -73,7 +80,7 @@ export function PostsGrid({ posts }: { posts: PostCardData[] }) {
     closeTimer.current = window.setTimeout(() => {
       setSelected(null);
       closeTimer.current = null;
-    }, CLOSE_DELAY);
+    }, PREVIEW_CLOSE_DELAY);
   }, [cancelClose]);
 
   /** 硬关（✕ / Esc / 点空白）：不等延迟 */
@@ -101,8 +108,8 @@ export function PostsGrid({ posts }: { posts: PostCardData[] }) {
       </div>
 
       {selected ? (
-        <PostPreviewPanel
-          post={selected}
+        <PreviewPanel
+          item={postToPreview(selected)}
           onClose={closeNow}
           onPointerEnter={cancelClose}
           onPointerLeave={scheduleClose}
