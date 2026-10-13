@@ -24,6 +24,8 @@ export type ShowcaseSection = {
  * `image` 可选：条目横幅条右端那张图的路径（public/ 下的）。**现在是占位图**，
  *   真图到位后直接覆盖 `public/favorites/<slug>.svg`，或在这里换路径即可。
  * `badge` 可选：名字后面那枚小徽标（例如新加的条目写「新增」），不填就没有。
+ * `imageFit` 可选：配图在右侧图区里的取法，默认 "cover"（按图区裁切、贴右、并放大取景）。
+ *   方图（例如播客封面）用 "contain"，让它按条高完整显示、不裁不放大。
  * `note` 可选：外链条目灯箱里的短文（当前没有条目在用，留着备用）。
  */
 export type FavoriteLink = {
@@ -32,6 +34,7 @@ export type FavoriteLink = {
   url: string;
   emoji: string;
   image?: string;
+  imageFit?: "cover" | "contain";
   badge?: string;
   note?: string;
 };
@@ -106,20 +109,23 @@ export const favoriteYears: FavoriteYear[] = [
   {
     year: 2024,
     items: [
-      { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com", image: "/favorites/github.svg" },
-      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so", image: "/favorites/notion.svg" },
-      { name: "哔哩哔哩", emoji: "📺", description: "学习区和游戏区的常驻观众", url: "https://www.bilibili.com", image: "/favorites/bilibili.svg" },
-      { name: "机核", emoji: "🎲", description: "游戏文化、电台与深度文章", url: "https://www.gcores.com", image: "/favorites/gcores.svg" },
-      { name: "知乎", emoji: "💬", description: "偶尔回答一些技术问题", url: "https://www.zhihu.com", image: "/favorites/zhihu.svg" },
       {
         name: "无人知晓",
         emoji: "🎙️",
         description: "2024 的第一条：《与自由的距离》（E33）",
         url: "https://www.xiaoyuzhoufm.com/episode/65dd839000ca19a600292454",
-        // 配图是与其它条目同规格的占位图，「晓」字用克莱因蓝强调（它排在「知」下面）
-        image: "/favorites/wurenzhixiao.svg",
+        // 配图用的是这档播客在小宇宙的封面（320×320 方图）。
+        // 方图丢进 29% 宽的图区若用默认的 cover 会被裁掉大半，所以这条声明 contain
+        // —— 整张封面按条高缩放、贴右缘完整显示。
+        image: "/favorites/wurenzhixiao-cover.jpg",
+        imageFit: "contain",
         badge: "新增",
       },
+      { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com", image: "/favorites/github.svg" },
+      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so", image: "/favorites/notion.svg" },
+      { name: "哔哩哔哩", emoji: "📺", description: "学习区和游戏区的常驻观众", url: "https://www.bilibili.com", image: "/favorites/bilibili.svg" },
+      { name: "机核", emoji: "🎲", description: "游戏文化、电台与深度文章", url: "https://www.gcores.com", image: "/favorites/gcores.svg" },
+      { name: "知乎", emoji: "💬", description: "偶尔回答一些技术问题", url: "https://www.zhihu.com", image: "/favorites/zhihu.svg" },
     ],
   },
   {

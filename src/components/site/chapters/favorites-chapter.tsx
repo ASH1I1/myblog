@@ -37,6 +37,7 @@ export function FavoritesChapter() {
                   title={link.name}
                   description={link.description}
                   image={link.image ?? group.cover}
+                  imageFit={link.imageFit}
                   badge={link.badge}
                 />
               </Reveal>

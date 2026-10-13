@@ -19,6 +19,7 @@ export function FavoriteStrip({
   title,
   description,
   image,
+  imageFit = "cover",
   badge,
 }: {
   href: string;
@@ -26,6 +27,11 @@ export function FavoriteStrip({
   description: string;
   /** 配图（public/ 下的路径；暂时是 public/favorites/ 里的占位图）。没有就只显示文字 */
   image?: string;
+  /**
+   * 配图取法：默认 "cover" —— 按图区裁切、贴右缘，并叠 scale 放大取景（书封靠它取到双眼）；
+   * "contain" 给方图用（例如播客封面）：按条高完整缩放、贴右缘，不裁不放大。
+   */
+  imageFit?: "cover" | "contain";
   /** 名字后面那枚小徽标（例如「新增」），不填就没有 */
   badge?: string;
 }) {
@@ -72,7 +78,13 @@ export function FavoriteStrip({
             alt=""
             aria-hidden="true"
             loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[1.2] object-cover object-[50%_50.5%]"
+            className={
+              imageFit === "contain"
+                ? // 方图（播客封面等）：按条高完整缩放、贴右缘，不裁不放大
+                  "absolute inset-0 h-full w-full object-contain object-right"
+                : // 宽图 / 书封：按图区裁切、贴右，并叠 scale 放大取景
+                  "absolute inset-0 h-full w-full scale-[1.2] object-cover object-[50%_50.5%]"
+            }
           />
         </span>
       ) : null}
