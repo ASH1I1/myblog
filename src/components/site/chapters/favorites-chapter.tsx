@@ -29,8 +29,10 @@ export function FavoritesChapter() {
               "relative mt-14 overflow-hidden",
               // 有书封的区块给一个最小高度：相框是绝对定位、垂直居中的，而
               // 「2011」这种只有一个条目的区块只有一百多像素高，框会顶到上下两缘。
+              // 人像改版后卡片高约 358px（要留出头顶到下巴），下限跟着抬到 26rem，
+              // 否则卡片上下会被区块的 overflow-hidden 裁掉。
               // 相框在窄屏改走流内（排在条目下方），所以这个下限只在 md 生效。
-              group.cover && "md:min-h-[22rem]",
+              group.cover && "md:min-h-[26rem]",
             )}
           >
             {/* 年份章：1 级字的大号数字（沿用全站「数字用等宽」的惯例），
