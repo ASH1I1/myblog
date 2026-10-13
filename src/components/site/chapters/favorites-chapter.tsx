@@ -42,10 +42,10 @@ export function FavoritesChapter() {
             </Reveal>
 
             {/* 条目区。带书封那一年（2011）与其它年份不同，其余年份照旧：
-                1) 不用上下两条贯穿的分隔线了，改成条目行里一条「引导线」——
-                   从文字右端起笔（100% 纯黑）向右渐隐，正好在卡片左缘透明收尾
-                   （实现见下面那条 span 的注释）；
-                2) 整块在 md 起垂直居中于区块 —— 区块里卡片也是垂直居中的，
+                1) 文字与右边的卡片之间不留任何连线（早先那条渐隐引导线已撤掉）；
+                2) 条目行右上角不再放箭头——那枚表示「可点击跳转」的箭头移到了
+                   卡片自己的右缘（见 cover-lightbox.tsx），于是这一行的右端是干净的；
+                3) 整块在 md 起垂直居中于区块 —— 区块里卡片也是垂直居中的，
                    于是这一行文字与卡片的中线齐平（窄屏卡片在流内，不参与对齐）。 */}
             <div
               className={cn(
@@ -58,6 +58,7 @@ export function FavoritesChapter() {
               {group.items.map((link, index) => {
                 // 条目分两种：站内路径（以 `/` 开头）走 <Link>，当前标签页进文章页，
                 // 右上角用 →（站内语义）；外链仍开新窗口，图标保持 ↗。
+                // 带书封那一年没有行内箭头（箭头在卡片上）。
                 const internal = link.url.startsWith("/");
                 const rowClass = cn(
                   "group flex items-baseline gap-4 py-5 transition-colors duration-300 ease-out hover:bg-surface",
@@ -67,31 +68,14 @@ export function FavoritesChapter() {
                   <>
                     <span className="type-body font-medium">{link.name}</span>
                     <span className="type-label text-muted">{link.description}</span>
-                    {/* 引导线：从文字右端起笔、向右渐隐，把这一行接到右边的卡片上。
-                        - 渐变就是「左端 rgba(0,0,0,1) → 右端 rgba(0,0,0,0)」，1px 高、不抢视觉；
-                        - `md:-ml-4` 抵掉行的 gap，让纯黑那一端正好贴住文字；
-                        - `md:mr-[392px]` 顶着卡片（392 = 卡片宽 360 + 它距区块右缘的 32px），
-                          再算上箭头占的一小段，线的右端落在卡片左缘前约 30px ——
-                          即透明度归零处正好在卡片之前，不会在卡片边上突兀截断；
-                        - 线用 self-center 落在行的垂直中心，这一行又与卡片中线齐平，
-                          于是线正对卡片中心（实测线/行/卡片三者 y 相同）；
-                        - 窄屏没有右侧空间，线不显示（卡片在流内、排在下方）。 */}
-                    {group.cover ? (
+                    {group.cover ? null : (
                       <span
                         aria-hidden="true"
-                        className="hidden h-px flex-1 self-center bg-[linear-gradient(to_right,rgba(0,0,0,1),rgba(0,0,0,0))] md:-ml-4 md:mr-[392px] md:block"
-                      />
-                    ) : null}
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "type-label ml-auto text-faint transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground",
-                        // md 起引导线已经把余量吃掉了，箭头不再需要 auto 外边距顶位
-                        group.cover && "md:ml-0",
-                      )}
-                    >
-                      {internal ? "→" : "↗"}
-                    </span>
+                        className="type-label ml-auto text-faint transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
+                      >
+                        {internal ? "→" : "↗"}
+                      </span>
+                    )}
                   </>
                 );
 

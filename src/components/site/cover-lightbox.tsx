@@ -4,16 +4,17 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-/** 相框的定位（桌面上贴区块右半边垂直居中；窄屏流内居中）与外观，两条路径共用。
+/** 卡片（那枚长方形按钮）的定位与外观，两条路径共用。
  *  外层 pointer-events-none + 本体 pointer-events-auto 是必须的：外框在桌面上是
  *  `inset-y-0 w-1/2` 的绝对定位盒子，铺满区块右半边整个高度又排在内容之后，
  *  不关掉指针事件就会把右半边整条带上的点击（比如条目行中段）全吃掉。
- *  本体不再留内边距：图片直接铺满整张卡片，圆角靠 overflow-hidden 裁；
- *  bg-white 留着当图还没加载出来时的底色。 */
+ *  本体不留内边距：照片直接铺满整张卡片，圆角靠 overflow-hidden 裁；
+ *  bg-white 留着当图还没加载出来时的底色；
+ *  `relative` 是给卡内那枚右缘箭头定位用的，`group` 让它跟随卡片 hover 微移。 */
 const FRAME_WRAPPER =
   "pointer-events-none mt-10 flex justify-center md:absolute md:inset-y-0 md:right-8 md:mt-0 md:w-1/2 md:items-center md:justify-end";
 const FRAME_BOX =
-  "pointer-events-auto overflow-hidden rounded-lg border border-border bg-white shadow-[0_22px_45px_-30px_rgba(16,16,16,0.6)] transition-transform duration-500 ease-out hover:scale-[1.03]";
+  "group pointer-events-auto relative overflow-hidden rounded-lg border border-border bg-white shadow-[0_22px_45px_-30px_rgba(16,16,16,0.6)] transition-transform duration-500 ease-out hover:scale-[1.03]";
 
 /**
  * 「最爱」章里那张书封：装裱好的相框。点下去做什么，按条目的 url 分两条路：
@@ -65,25 +66,37 @@ export function CoverFrame({
   }, [open]);
 
   const cover = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={`《${title}》封面`}
-      loading="lazy"
-      // 人像特写构图（下面的数都是照源图 444×590 量出来的）：
-      // 图 358×356 + 1px 描边 = 整卡 360×358。窄屏靠 max-w-full 收窄、高度按
-      // aspect-ratio 走，比例不变形；圆角仍由卡片的 overflow-hidden 负责裁。
-      //
-      // 取景：源图里头顶在 y≈117、眼睛 y≈270、下巴 y≈455；作者行到 y≈108 为止、
-      // 出版社社徽在 y≈555。object-position 73% 让可见横带落在 y≈108–550：
-      // 头顶留白约 7px、下巴完整，上下两头（书名/作者行、社徽）都裁在卡外。
-      // ⚠️ 这条源图上「眼睛正好落在 1/3」与「不露社徽」不可兼得——横带要 480 源像素
-      // 以上才能把眼睛压到 1/3，而那样下缘必然扫到 555 的社徽。所以取的是
-      // 「眼睛 36.6% + 两头干净」这一版。想更接近 1/3：把第二个百分数调大
-      // （取景整体下移，头顶留白会变紧），调到 90% 左右眼睛就压到约 1/3、但社徽会露出来。
-      // 第一个 50% 是左右居中，不用动。
-      className="block aspect-[358/356] w-[358px] max-w-full object-cover object-[50%_73%]"
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={`《${title}》封面`}
+        loading="lazy"
+        // 人像特写构图（下面的数都是照源图 444×590 量出来的）：
+        // 图 358×356 + 1px 描边 = 整卡 360×358。窄屏靠 max-w-full 收窄、高度按
+        // aspect-ratio 走，比例不变形；圆角仍由卡片的 overflow-hidden 负责裁。
+        //
+        // 取景：源图里头顶在 y≈117、眼睛 y≈270、下巴 y≈455；作者行到 y≈108 为止、
+        // 出版社社徽在 y≈555。object-position 73% 让可见横带落在 y≈108–550：
+        // 头顶留白约 7px、下巴完整，上下两头（书名/作者行、社徽）都裁在卡外。
+        // ⚠️ 这条源图上「眼睛正好落在 1/3」与「不露社徽」不可兼得——横带要 480 源像素
+        // 以上才能把眼睛压到 1/3，而那样下缘必然扫到 555 的社徽。所以取的是
+        // 「眼睛 36.6% + 两头干净」这一版。想更接近 1/3：把第二个百分数调大
+        // （取景整体下移，头顶留白会变紧），调到 90% 左右眼睛就压到约 1/3、但社徽会露出来。
+        // 第一个 50% 是左右居中，不用动。
+        className="block aspect-[358/356] w-[358px] max-w-full object-cover object-[50%_73%]"
+      />
+
+      {/* 卡片右缘的小箭头：表示整块卡片可点（站内进文章页 / 外链弹灯箱）。
+          pointer-events-none 让它不吃点击——点它等于点卡片本身；
+          贴在卡片右侧、垂直居中，卡片 hover 时随之一同轻微右移。 */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-muted shadow-[0_2px_8px_rgba(16,16,16,0.18)] transition-transform duration-300 ease-out group-hover:translate-x-0.5 group-hover:text-foreground"
+      >
+        →
+      </span>
+    </>
   );
 
   // 站内跳转：相框本身就是链接，不弹灯箱（灯箱留给「点开看大图」的外链场景）
