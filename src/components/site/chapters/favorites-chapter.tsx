@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "@/components/motion-kit";
 import { Chapter } from "@/components/site/chapter";
+import { CoverFrame } from "@/components/site/cover-lightbox";
 import { favoritesIntro, favoriteYears } from "@/lib/showcase";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,9 @@ export function FavoritesChapter() {
       </Reveal>
 
       {years.map((group) => {
+        // 书封挂在年份上（FavoriteYear.cover），那条目的书名/标语/短文/链接取该组第一条
+        // —— 目前只有 2011 有 cover，也就只有那一条（多条目时怎么取见 showcase.ts 注释）
+        const featured = group.items[0];
         return (
           <section
             key={group.year}
@@ -37,11 +41,12 @@ export function FavoritesChapter() {
               <h3 className="type-display font-mono">{group.year}</h3>
             </Reveal>
 
-            {/* 条目区。带书封那一年（2011）是一条「超宽横幅」，其它年份照旧：
-                横幅里从左到右 —— 书名 → 标语 → 白色过渡留白（ml-auto 撑出来的）
-                → 人脸特写 → 圆形跳转按钮。整条横幅就是一个 <Link>（点哪儿都进文章页），
-                文字与照片之间不画任何连线。
-                横幅在 md 起绝对定位、垂直居中于区块，所以左侧文字仍在原来的高度上。 */}
+            {/* 条目区。带书封那一年（2011）与其它年份不同，其余年份照旧：
+                1) 文字与右边的卡片之间不留任何连线（早先那条渐隐引导线已撤掉）；
+                2) 条目行右上角不再放箭头——那枚表示「可点击跳转」的箭头移到了
+                   卡片自己的右缘（见 cover-lightbox.tsx），于是这一行的右端是干净的；
+                3) 整块在 md 起垂直居中于区块 —— 区块里卡片也是垂直居中的，
+                   于是这一行文字与卡片的中线齐平（窄屏卡片在流内，不参与对齐）。 */}
             <div
               className={cn(
                 "mt-5",
@@ -53,48 +58,17 @@ export function FavoritesChapter() {
               {group.items.map((link, index) => {
                 // 条目分两种：站内路径（以 `/` 开头）走 <Link>，当前标签页进文章页，
                 // 右上角用 →（站内语义）；外链仍开新窗口，图标保持 ↗。
-                // 带书封那一年没有行内箭头（箭头是横幅最右那枚圆片）。
+                // 带书封那一年没有行内箭头（箭头在卡片上）。
                 const internal = link.url.startsWith("/");
                 const rowClass = cn(
-                  "group flex flex-wrap gap-4 py-5 transition-colors duration-300 ease-out hover:bg-surface",
-                  // 横幅要竖直居中（照片与文字同一条中线）；其它年份保持基线对齐 + 下分隔线
-                  group.cover
-                    ? "items-center"
-                    : "items-baseline border-b border-border",
+                  "group flex items-baseline gap-4 py-5 transition-colors duration-300 ease-out hover:bg-surface",
+                  !group.cover && "border-b border-border",
                 );
                 const row = (
                   <>
-                    {/* 文字组：名字与标语保持原来的基线对齐关系 */}
-                    <span className="flex items-baseline gap-4">
-                      <span className="type-body font-medium">{link.name}</span>
-                      <span className="type-label text-muted">{link.description}</span>
-                    </span>
-                    {group.cover ? (
-                      <>
-                        {/* 人脸特写：用 public/jobs-face.jpg —— 从书封原图裁出的
-                            「面部右半侧」派生图（源图裁切区域 x150,y136,225×320：
-                            双眼完整、右侧留一条纯白、头顶轮廓不完整、眼睛在画面 42% 处）。
-                            ml-auto 把整块顶到横幅右端，中间那段空白就是过渡留白；
-                            窄屏一行放不下时它自己折到第二行、仍靠右。 */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src="/jobs-face.jpg"
-                          alt={`《${link.name}》封面局部`}
-                          loading="lazy"
-                          width={225}
-                          height={320}
-                          className="ml-auto h-auto w-[225px] max-w-full rounded-[4px] object-cover"
-                        />
-                        {/* 跳转按钮：人像外侧的白色圆片 + 黑色箭头。
-                            pointer-events-none 让它不吃点击——点它等于点整条横幅这个 Link。 */}
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-white text-foreground shadow-[0_2px_8px_rgba(16,16,16,0.16)] transition-transform duration-300 ease-out group-hover:translate-x-0.5"
-                        >
-                          →
-                        </span>
-                      </>
-                    ) : (
+                    <span className="type-body font-medium">{link.name}</span>
+                    <span className="type-label text-muted">{link.description}</span>
+                    {group.cover ? null : (
                       <span
                         aria-hidden="true"
                         className="type-label ml-auto text-faint transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
@@ -125,6 +99,19 @@ export function FavoritesChapter() {
                 );
               })}
             </div>
+
+            {/* 书封相框：桌面上浮在区块右半边、垂直居中——绝对定位，所以排在内容之后
+                也不挡文字；右缘留 32px，免得压住条目行右上角那个箭头。
+                点下去是进文章页还是弹灯箱，由条目的 url 决定（见 cover-lightbox.tsx）。 */}
+            {group.cover && featured ? (
+              <CoverFrame
+                src={group.cover}
+                title={featured.name}
+                tagline={featured.description}
+                note={featured.note}
+                href={featured.url}
+              />
+            ) : null}
           </section>
         );
       })}
