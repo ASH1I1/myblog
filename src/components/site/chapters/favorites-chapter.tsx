@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "@/components/motion-kit";
 import { Chapter } from "@/components/site/chapter";
-import { CoverCard } from "@/components/site/cover-card";
+import { CoverStrip } from "@/components/site/cover-strip";
 import { favoritesIntro, favoriteYears } from "@/lib/showcase";
 
 /** 04 最爱：按年份分章（内容全在 src/lib/showcase.ts，加条目只改那里） */
@@ -34,13 +34,11 @@ export function FavoritesChapter() {
             </Reveal>
 
             {group.cover && featured ? (
-              /* 横向长条卡片：左图区（约 1/4，仍是半脸特写取景）+ 右侧文字区
-                 （标题 / 描述 / 小字信息，右下角放年份 + 圆形箭头按钮）。
-                 整张卡片就是一个 Link，点哪儿都进这篇文章。 */
+              /* 超长窄横幅条：左边书名 + 浅灰标语、右边半脸特写照片、最右端小箭头，
+                 透明底 + 两端灰蓝晕染。整条就是一个 Link，点哪儿都进这篇文章。 */
               <div className="mt-5">
-                <CoverCard
+                <CoverStrip
                   href={featured.url}
-                  year={group.year}
                   title={featured.name}
                   description={featured.description}
                   cover={group.cover}
