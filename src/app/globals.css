@@ -184,19 +184,6 @@
     will-change: transform;
   }
 
-  .site-orb-klein {
-    left: 16%;
-    top: 28%;
-    width: 14rem;
-    height: 14rem;
-    background: radial-gradient(
-      circle,
-      rgb(0 47 167 / 0.14) 0%,
-      rgb(0 47 167 / 0) 70%
-    );
-    animation: site-orb-drift-a 9s ease-in-out infinite;
-  }
-
   .site-orb-ink {
     right: 14%;
     bottom: 26%;
@@ -325,17 +312,8 @@
   }
 }
 
-/* 漂浮光斑的原地漂浮（对应原先 motion 的 x/y 摆动，全部走 translate3d） */
-@keyframes site-orb-drift-a {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(16px, -24px, 0);
-  }
-}
-
+/* 漂浮光斑的原地漂浮（对应原先 motion 的 x/y 摆动，全部走 translate3d）。
+   drift-a 随那枚克莱因蓝光斑一起去掉了，这里只剩右下那枚灰光斑用的 drift-b。 */
 @keyframes site-orb-drift-b {
   0%,
   100% {
