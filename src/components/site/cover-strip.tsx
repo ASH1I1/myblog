@@ -27,7 +27,7 @@ export function CoverStrip({
     <Link
       href={href}
       aria-label={`读《${title}》`}
-      className="group relative flex h-16 items-center gap-4 overflow-hidden rounded-lg bg-white/40 pr-5 pl-5 transition-colors duration-300 ease-out hover:bg-white/75"
+      className="group relative flex h-14 items-center gap-4 overflow-hidden rounded-lg bg-white/40 pr-5 pl-5 transition-colors duration-300 ease-out hover:bg-white/75"
     >
       {/* 左：书名（黑）与紧跟其后的浅灰小字标语，沿条高垂直居中。
           标语在窄屏（<640）隐藏，否则整条在手机上会被挤到溢出。 */}
@@ -37,34 +37,37 @@ export function CoverStrip({
       </span>
 
       {/* 右：照片 + 最右端的小箭头。
-          照片区按条高取 2:1（128×64），图 h-full + object-fit: cover 贴满，
-          再叠一个 scale-[2] 等比放大取景 —— 只缩放不拉伸（宽高比不变）。
-          「只露双眼」的取景是算出来的：源图里眼睛在 y≈270、圆框眼镜 235–310，
-          scale 2 把可见横带收到 111 源像素，object-position 纵向取 43% 再把这条带子
-          对到眼睛上 —— 于是画面里只剩双眼 + 圆框眼镜 + 两侧鬓角/胡须，
-          口鼻下巴与额头大部分都落在框外。
-          放大部分由图区那层 overflow-hidden 裁掉，不会盖到箭头、也不会越出条高。
-          左右渐隐的 mask 挂在**图区外层**而不是图上：挂图上会被 scale 一起放大，
-          边缘宽度就随缩放漂移；挂外层则永远是图区宽度的 8%，不随缩放变。
-          （两侧的鬓角是要露的，所以这圈渐隐收窄到 8%，只把最外侧化开。） */}
-      <span className="relative ml-auto flex h-full items-center gap-3">
-        <span className="relative h-full aspect-[2/1] overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={cover}
-            alt={`《${title}》封面`}
-            loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[2] object-cover object-[50%_43%]"
-          />
-        </span>
+          这两个都是长条（flex 容器）的**直接子元素** —— 照片的百分比宽度必须对着
+          「条宽」解析，所以不能再套一层 shrink-to-fit 的 wrapper：
+          那样 29% 会去对 wrapper 自己的宽度，解析成几像素（踩过）。
 
-        {/* 最右端：浅灰小箭头（装饰性，点它等于点整条） */}
-        <span
-          aria-hidden="true"
-          className="type-label text-faint transition-transform duration-300 ease-out group-hover:translate-x-0.5"
-        >
-          ↗
-        </span>
+          照片区宽取条内容宽的 29%（≈条宽的 28%，约 1/3）、高撑满条高（56px），
+          图 h-full + object-fit: cover 贴满 —— 只等比裁剪，不拉伸、不加额外缩放。
+          取景是「双眼 + 圆框眼镜」特写，尺寸按几何算：
+          可见横带高度 = 444 × 条高 / 照片宽 = 444 × 56 / 322 ≈ 77 源像素，
+          而源图里圆框眼镜整副高约 75（235–310）、眼睛在 y≈270；
+          object-position 纵向取 45% 把这条 77px 的带子正对到眼睛上 ——
+          于是只见双眼 + 整副圆框眼镜 + 两侧鬓角，口鼻下巴与额头都落在框外。
+          ⚠️ 这条几何也定死了条高的下限：照片要占约 1/3 宽时，
+          可见横带 = 444×条高/照片宽，条高压到 56 以下眼镜上下缘就会被切。
+          超出部分由图区那层 overflow-hidden 裁掉，不盖箭头、不越条高。
+          左右渐隐的 mask 挂在图区上（图区宽度的 8%），只把最外侧化开、保住鬓角。 */}
+      <span className="relative ml-auto h-full w-[29%] shrink-0 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cover}
+          alt={`《${title}》封面`}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_45%]"
+        />
+      </span>
+
+      {/* 最右端：浅灰小箭头（装饰性，点它等于点整条） */}
+      <span
+        aria-hidden="true"
+        className="type-label text-faint transition-transform duration-300 ease-out group-hover:translate-x-0.5"
+      >
+        ↗
       </span>
     </Link>
   );
