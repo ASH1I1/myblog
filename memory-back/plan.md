@@ -531,3 +531,194 @@ Hero 当封面，其后八章。**章节 id 直接等于旧路由路径**（`/fa
 - **头像**：`siteConfig.author.avatar` 从空串改成 **`/icon.png`**，圆圈里显示的就是站点图标那张 **3D 多边兽**（低多边形渲染）。`src/app/icon.png` 是 Next 的 app icon 约定文件，本身就以 `/icon.png` 对外提供（实测 200 / 20170 字节 / image/png），所以**同一份素材两处使用，不用复制第二份**；换图标时头像会跟着一起换。若将来想让两者独立，把它复制一份到 `public/` 再改指向即可。
 - 代码里本来就有这个回退机制（`avatar` 为空时才显示昵称首字母），所以这次只是改配置，组件一个字节没动。实测：`<img src="/icon.png">`、渲染 80×80、原图 128×128、`rounded-full` 圆形裁切、`complete && naturalWidth > 0` 加载成功、字母占位不再出现。
 - `tsc` / `lint` / `build` 全过。
+
+## 二十四、后台视觉对齐前台（2026-10-11）
+
+**起因**：后台从建立起就没动过视觉，还是通用 Tailwind 后台的样子（`text-2xl font-semibold` 标题、`rounded-md bg-primary` 蓝按钮、`text-3xl` 统计数字、徽章用 Tailwind 默认的 emerald/amber——那两个色根本不在本站设计令牌里）；前台这几轮已经长成「无印式 + 克莱因蓝 + 网格纸」的一套语言。两边放一起像两个站点。
+
+**范围**：16 个文件、+121/−93，**全部是 className 字符串**（外加两处注释与一处 CSS 规则），没有动任何 logic / 状态 / 请求 / Server Action。
+
+### 映射（逐类替换）
+
+| 位置 | 改前 | 改后 |
+| --- | --- | --- |
+| 主按钮 | `rounded-md bg-primary text-white hover:bg-primary-strong` | **`rounded-full bg-foreground text-background hover:opacity-80`**（与前台 404 页那颗同源） |
+| 危险确认 | `rounded-md bg-danger hover:bg-red-700` | `rounded-full bg-danger hover:opacity-80`（同形状换墨色） |
+| 次按钮 / 行内动作 | `rounded-md border … hover:border-primary` | `rounded-lg border border-border hover:border-klein hover:text-klein` |
+| 卡片 / 面板 | `rounded-xl` | `rounded-2xl` |
+| 输入框 | `rounded-md … focus:border-primary` | `rounded-lg … focus:border-klein` |
+| 统计卡标签 / 表头 / 区块小标题 | `text-sm text-muted` | `type-label font-mono tracking-[0.2~0.3em] text-faint` |
+| 统计数字 | `text-3xl font-semibold tabular-nums` | **`type-display font-mono tabular-nums`**（游戏页数字块同款） |
+| 卡片内分隔 | `border-t`/`border-b border-border` | `rule-fade-t` / `rule-fade-b` |
+| 状态徽章 | `bg-emerald-50 text-emerald-700` / amber | 细线 + 等宽：已发布 `border-klein text-klein`、草稿 `border-border text-muted`（与著作页「在读/已读」同款） |
+| 侧边栏当前项 | `bg-primary/10 text-primary` | **克莱因蓝左标 + `font-medium text-foreground`**（对应前台导航「激活项转克莱因蓝」） |
+| 表单字段标签 | `text-sm font-medium` | `type-label font-medium text-muted`（**不加等宽疏排**——表单标签要好读，不是装饰） |
+
+**保持不动的**：后台页面大标题（`text-2xl font-semibold`，后台竖向空间宝贵）、表格行与列表行的分隔（本来就与前台写法一致）、共享的 `pagination.tsx`。
+
+### 一处比方案更进一步的地方
+
+方案里把「焦点圈仍是蓝的」列为刻意保留（改全局 `:focus-visible` 就等于动前台）。落地时发现弹窗打开会自动聚焦「取消」，**那圈蓝在满屏克莱因蓝里很扎眼**。改成**后台作用域覆盖**：新增 `.admin-scope :focus-visible { outline-color: var(--color-klein) }`，作用域由后台布局与登录页各挂一个类名——既统一了，又没碰前台的 base 规则。实测弹窗里取消按钮的 `outline-color` 从 `rgb(37,99,235)` 变成 `rgb(0,47,167)`。
+
+### 验证
+
+- `tsc` / `lint` / `build` 全过；diff 逐行核对过「只有 className 变化」。
+- **逐屏截图**：登录页（含过期提示）、仪表盘、文章列表、新建、编辑、删除弹窗、移动端仪表盘 + 抽屉。
+- **统计数字放得下**：`type-display` 在 ≥768px 是 4.5rem，仪表盘那排是 `lg:grid-cols-4`，每卡内宽 272px；实测最宽的「1,331」占 230px ✓ 不溢出。**但六位数（如 12,345）会顶到边**——数据涨上去就要么把网格降到 `lg:grid-cols-2`，要么数字退回窄屏档。
+- **前台零影响**：`--color-primary` 仍是 `#2563eb`、首页 h1 左缘仍 139、目录卡片仍 214、展示页竖排仍 `vertical-rl`、落点仍 96px、著作页徽章仍是克莱因蓝描边 ✓。
+
+### 已知未做
+
+- 分页器（前后台共用）的激活态仍是 `--color-primary` 的蓝。要统一就得决定是改它（并接受前台分页跟着变）还是给它加个作用域参数。
+- 后台表单是满宽的（标题输入框横跨约 1150px）。前台处处收着尺度（正文 720px、内容列 1152px），表单其实更适合加一个 `max-w-4xl` 之类的阅读宽度——但那超出「只换 className 的视觉对齐」，留待你要的时候再说。
+
+## 二十五、「最爱」章标语换文案（2026-10-11）
+
+标语的竖排文字从「收藏夹里放着我常逛、常念、常觉得好用的东西。」改成「这些是伟大的灯塔，照亮了我的道路。他们塑造了我的旅程。」（22 字 → 27 字）。只改了 `src/lib/showcase.ts` 里 `showcaseNav` 的那条 `tagline`——章节书签与首页目录卡片都从这一处取文案。
+
+**「换列」为什么没做**：竖排文字的**列间距就是行高**（实测标语列宽 19px = 行高 19.2px），所以多一列必然把书签栏撑宽；而全页内容列的左缘正是由书签栏宽度决定的（七章 + 目录卡片上一轮刚统一在 x=214）。按需求设想的 16px 列间距算，栏宽要从 142px 涨到约 179px，**全页内容右移 37px**，1440 下右侧只剩 27px，折线右路那条还会跑进内容区。确认后改为**保持单列**：标语从 280px 变 343px 高，其余一切不动。
+
+实测：标语仍单列（宽 19px、高 343px），书签栏仍 142px，七章内容列与目录卡片左缘仍全部是 214 ✓——零位移。
+
+## 二十六、「最爱」章年份改成从新到旧（2026 → 2025 → 2024）（2026-10-11）
+
+**做法：数据顺序不动，显示时倒排。** `favoriteYears` 在数据文件里仍按「从早到晚」维护（方便按时间往下追加），排序放在渲染处：
+
+```ts
+const years = [...favoriteYears].sort((a, b) => b.year - a.year);
+```
+
+**不能直接手改数组顺序**——那样新增 2027 时得记得手工放到最前面；现在插在哪都会自动排到最前。`[...]` 的展开也不能省：`sort` 会就地改数组，直接改那个模块级常量会污染所有引用方。
+
+**实测**（故意把 2027 插到数组**最前面**，即打乱时间序的最严苛情况）：渲染顺序 `2027 → 2026 → 2025 → 2024` ✓ 自动排到最前。验证后已删除该测试条目，数据恢复 2024/2025/2026，渲染 `2026 → 2025 → 2024` ✓ 条目数 2/3/5 与数据一致。
+
+数据文件里的注释也一并改准了（说明「这里从早到晚、显示时倒排」），免得以后编辑时误以为显示顺序就是数组顺序。`tsc` / `build` 全过。
+
+## 二十七、「最爱」章新增 2011 年份分组（2026-10-11）
+
+在 `favoriteYears` 里新增 `{ year: 2011, items: [{ name: "乔布斯传", emoji: "🍎", description: "stay hungry, stay foolish.", url: "https://book.douban.com/subject/6862282/" }] }`。
+
+**加在数组最前面**（不是最后）——数据文件按「从早到晚」维护，而显示是渲染时倒排的（见上一节），所以 2011 在屏幕上的位置正是需求要的「2024 后面」。这也再次印证了那个排序设计：位置由年份决定，不由数组下标决定。
+
+条目走的是和其他年份完全相同的 map 分支，所以行样式（名称 + 说明 + 右侧 ↗、细线描边、hover）自动一致，无需任何额外样式。实测渲染顺序 `2026 → 2025 → 2024 → 2011`、条目数 2/3/5/1、最后一行的名称/说明/href（`target="_blank"` + `rel="noopener noreferrer"`）逐项正确。`tsc` / `lint` / `build` 全过。
+
+## 二十八、「著作」栏目改名为「读过」（2026-10-11）
+
+与之前「代码 → 项目」同类。**用户可见的文字其实只有一处源头**——`showcaseNav` 里的 `label`，章节竖排书签、首页目录卡片、导航栏三处都从它派生。确认后连锚点与旧地址一起改（`#books` → `#read`），所以还动了图标键、重定向映射、章节组件文件名与组件名。
+
+| 改动 | 位置 |
+| --- | --- |
+| `href: "/books"` → `"/read"`，`label: "著作"` → `"读过"` | `src/lib/showcase.ts` |
+| 图标键 `"/books"` → `"/read"`（图标本身仍是 `BookOpen`，书本来就该用书的图标） | `src/lib/icons.ts` |
+| **重定向从「机械推导」改成「显式映射」** | `next.config.ts` |
+| `books-chapter.tsx` → `read-chapter.tsx`（`git mv` 保留历史），`BooksChapter` → `ReadChapter` | `src/components/site/chapters/` |
+| 若干注释里的「著作」（globals.css / status-badge / section-index） | — |
+
+**重定向那处值得单独记**：原来是 `[路径].map(p => ({ source: p, destination: `/#${p.slice(1)}` }))`——机械地把路径当锚点。改锚点后 `/books` 必须去 `#read`，这个推导就不成立了，改成显式的 `[source, anchor]` 二元组列表。这是「命名一致」与「少写代码」之间的一次取舍：显式列表多几行，但不会再出「路径与锚点悄悄脱钩」这种事。
+
+### 遇到并修掉的一个错
+
+改完后首页直接 500：`Error: 未知章节：books`。原因是我漏改了 `read-chapter.tsx` 里的 `<Chapter id="books">`（只改了文件名、组件名和注释）。**这个错是被 `chapterMeta()` 里那句「找不到就抛」当场炸出来的**——当初写登记表时特意没让它静默返回 undefined，这次直接生效：错误信息点名了是哪个 id，一眼定位。教训是改名时要连**传给函数的字符串字面量**一起找，`grep 旧名字` 要覆盖到 prop 值。
+
+### 验证
+
+- 章节：`06 read「读过」`——编号仍是 06（顺序与编号不动）✓；`#books` 锚点已不存在 ✓
+- 导航：首页 / 最爱 / 项目 / 游戏 / 音乐 / **读过** / 关于我 ✓
+- 首页卡片：第五张标题「读过」、**描述「读了什么，顺便记在墙上。」未动** ✓、链接 `/#read` ✓
+- 竖排书签：标语未动、仍 `vertical-rl` ✓；`/#read` 深链落点 96px ✓
+- 旧地址：`/books` → **307 → `/#read`** ✓，其余五条不变 ✓
+- 折线：读过那张卡走右路（3 个拐点），终点 y 6753.77 与期望 6754 吻合、x=92.8 = 标题右缘 + 10 ✓
+- `tsc` / `lint` / `build` 全过
+
+**第 4 条（元信息）实际无事可做**：整站合并成一条长页后标签页标题由首页 metadata 统一提供（`YongBin`），原先那个 per-page 的 `metadata.title = "著作"` 随路由一起删掉了；仓库里也没有 sitemap/robots。
+
+## 二十九、「最爱」章 2011 分组加书封装饰（2026-10-12）
+
+**做法：做成数据驱动，而不是写死年份。** `FavoriteYear` 增加可选的 `cover?: string`（public/ 下的路径），2011 那组填 `cover: "/jobs-cover.jpg"`；组件里只有一句 `{group.cover ? <封面层/> : null}`。于是「其它年份不受影响」是结构上成立的，将来想给别的年份也加封面只改数据。
+
+**用 background-image 而不是 `<img>`**：图还没放进 `public/` 时，`<img>` 会留一个碎图图标（即使 `alt=""` 也不一定干净），而 background 的加载失败表现就是「什么都没有」——与「装饰」这个身份相符。它本来就 `aria-hidden`，语义上也该是背景而不是内容。
+
+结构与几何（1440 实测）：
+
+| 项 | 实现 | 实测 |
+| --- | --- | --- |
+| 位置 | 区块 `relative overflow-hidden`，封面层 `absolute inset-y-0 right-0 w-1/2` | 封面 `[790,259,576,178]`、区块 `[214,259,1152,178]` |
+| 撑满高度 | `background-size: auto 100%` + `background-position: right center` | 高 178 = 区块高 ✓、右缘 1366 贴齐 ✓ |
+| 左缘渐隐 | `.year-cover` 里的 `mask-image: linear-gradient(to left, black 45%, transparent 95%)`（含 `-webkit-` 前缀，写在 globals.css 里而不是用任意值语法，免得前缀靠自动补全） | `opacity .9`、遮罩与尺寸逐项核对 ✓ |
+| 层级 | 封面层放在 DOM 最前 + 下面的内容各自 `relative` | 箭头处与正文处的最上层元素都是文字 ✓ |
+| 悬浮放大 | 区块 `group/year`、封面 `group-hover/year:scale-[1.03]`，只动 `scale` | 编译产物里是 `.group-hover\/year\:scale-\[1\.03\]:is(:where(.group\/year):hover *){scale:1.03}` ✓ |
+| 手机端 | 封面层 `hidden md:block` | 375 下 `display: none` ✓ 无横向溢出 ✓ |
+
+**用命名 group（`group/year`）是有原因的**：条目行自己已经用了无名 `group`（右侧 ↗ 的位移靠它）。若给区块也加无名 `group`，那么当鼠标在区块任意位置时，**条目行的 `group-hover:` 也会命中**、箭头会莫名抬起。命名之后两者的选择器互不相干。
+
+**两处工具用法上的坑记一笔**：① 验证 `scale-[1.03]` 时我先 grep 了 `transform: scale(1.03)` 结果误判「没编译」——Tailwind v4 产出的是独立的 `scale: 1.03` 属性，不是 transform 函数；② 探针抛异常时 `Runtime.evaluate` 只返回 undefined，查了很久，给脚本补上了 `exceptionDetails` 打印。
+
+**素材未到位**：`public/jobs-cover.jpg` 目前不存在（你 Downloads 里那张 `image_1791709933930_edjy.png` 是设计线框图，不是书封）。我临时用站点图标做占位验完几何/遮罩/层级/放大后已删除——现在缺图的表现是「右半边什么都没有」，不会崩、也不会留碎图。
+
+### 补：封面素材已找到并放入（2026-10-12 续）
+
+**顺手查出并修掉一个内容错误**：你给的豆瓣链接 `subject/6862282` **不是《乔布斯传》**——那个条目打开是**一本钢琴教材**（页面标题「钢琴 (豆瓣)」，封面也就是我第一轮误抓的那张钢琴书封面）。正确的条目是 **`subject/6798611`**（《史蒂夫·乔布斯传》，[美] 沃尔特·艾萨克森 / 中信出版社，2011）✓ 已把条目链接改过去。
+
+封面取自豆瓣该书条目的大图（`img3.doubanio.com/view/subject/l/public/s6974202.jpg`），444×590、40.6 KB，落在 `public/jobs-cover.jpg`，肉眼确认是乔布斯那张经典肖像封面 ✓。
+
+**⚠️ 版权与仓库**：书封是有版权的图，而这个仓库是**公开**的——提交进 git 等于公开分发。可选的折中是在 `.gitignore` 里加一行 `public/jobs-cover.jpg`（本地与部署时自行放置该文件），本次没有替你做这个决定。
+
+**观感提示**：2011 区块只有一个条目，区块高 178px，而封面高度被要求「撑满区块高度、不超出」，所以它只有约 134×178——是张小图。想更显眼就得让区块本身更高（比如给该年的 items 加条目，或给区块加个 min-height），本次按需求原样实现。
+
+**两条后续都照做了（2026-10-12）**：
+
+1. **`.gitignore` 加了 `public/jobs-cover.jpg`**（带注释说明原因，免得以后有人当漏提交补上）。`git check-ignore` 确认生效，该文件已从待提交列表消失。代价是换机器/部署时要记得自行放置这个文件——放不在时页面表现是「右半边什么都没有」，不会报错。
+2. **给有书封的区块加了最小高度** `md:min-h-[22rem]`（条件是 `group.cover` 存在，所以只作用于 2011，其它年份仍是内容高度）。区块 178 → **352px**，封面随之从约 134×178 变成 **约 264×352**，左侧渐隐这才看得出「浮出格纸」的意味。其它年份高度实测未变（2026:252 / 2025:327 / 2024:475）。
+
+注意这个下限**只在 md 生效**：封面本来就是 `hidden md:block`，窄屏没有封面，也就不该无端多出一段空白。
+
+## 三十、首页悬浮预览面板：悬停延迟打开 + 触屏两段式（2026-10-13）
+
+**背景**：面板功能本体（文章卡片 + 顶部 5 张目录卡片 + 五个章节共 54 个触发点全部接入）在前几轮已完成并通过验收（参考图版式：白色磨砂圆角卡、右侧约 1/4 页宽、高度自适应封顶 70vh、四段式、部分纯展示条目无按钮）。验收时发现两处与需求不符，本轮修掉；文档一直没补，一并记在这里。
+
+### 做法
+
+**一、180ms 从「收起」侧挪到「打开」侧。** 需求原文「hover 180ms 触发」指的是「停够 180ms 才弹」，此前实现成了「立刻弹、移开 180ms 收」。现在两条时序并存：`PREVIEW_OPEN_DELAY`（停在条目上满这么久才开，扫过不弹）+ `PREVIEW_CLOSE_DELAY`（移开后的缓冲，鼠标从卡片挪到右侧面板要跨一段空隙，没缓冲会在半路先关掉）。目录卡片那条折线也跟着等 180ms，和面板同一刻出来。
+
+**二、触屏从「完全没有」到「点一下弹底部抽屉」。** 此前 `(hover: hover) and (pointer: fine)` 不成立时三处触发点直接 return，手机上点条目走各自的老行为——而**游戏 / 音乐 / 读过**三章的条目本体是纯 `div`（没有 href），点上去此前毫无反应。现在统一成两段式：**点条目 → 弹底部抽屉；再点同一条目才放行**（有跳转目标的进详情页 / 新窗口，纯展示条目就表现为「再点一下收起」）。
+
+**三、顺手把三份重复收敛成一份。** 新增 `src/components/site/preview-controller.ts`（`usePreviewController`）：文章列表、目录卡片、章节条目三处此前各写了一套一模一样的 `open / scheduleClose / closeNow` + 两个 `useRef` 定时器，本轮要加两条新规则，再复制下去就是三份各自漂移的时序，所以合成一处；`PREVIEW_CLOSE_DELAY` 也从 `preview-panel.tsx` 挪到这里，面板组件只剩版式。`PreviewItem` 加了可选的 `id`（调用方给的稳定标识），控制器拿它判「已开的是不是这一条」，文章列表和目录卡片都传了。
+
+### 关键坑
+
+1. **触屏开面板必须挂在 `click` 上**。面板的外部关闭监听是 `document` 的 `mousedown`，而触屏真实的点按序列是 touchstart → touchend → **mousedown → mouseup → click**（用 CDP 真实触摸录到的顺序，见下）；挂在 touchstart / pointerdown 上会被紧随其后的 mousedown 立刻关掉。
+2. **tap 打开的面板不能吃 mouse / pointer 离开**。触屏抬手会合成这些事件，照单全收就是「抽屉开了就自关」。控制器里用 `mode: "hover" | "tap"` 区分：tap 模式下一切离开事件都不触发收起，只认 ✕ / 点空白 / Esc / 点另一个条目。面板自己的 `onPointerLeave` 同样按模式分流。
+3. **两套定时器会打架**。从 A 卡快速划到 B 卡时，A 的收起计时和 B 的打开计时几乎同时到点，会「关了再开」闪一下。规则改成：**进入新触发源先取消待收起，已开着的面板保持显示旧内容，直到新条目住满 180ms 那一刻才换**——实测切换窗口内 12 次采样面板始终存在。
+4. **捕获阶段拦跳转**。守卫挂在触发源的 `onClickCapture` 上：`preventDefault()` 能挡住 `<Link>`（Next 检查 defaultPrevented）与 `<a target="_blank">` 的默认行为，`stopPropagation()` 顺带让 `ChapterLink` 自己的 onClick 不跑（第一下不该滚动）。**鼠标设备直接放行**，只在「这一下点在链接上」时顺手关面板——防旧面板跟着留在新页面上（`cacheComponents` 下客户端状态还可能被保留）。实测跳转后无残留面板。
+5. **折线搭同一趟定时器**。`hoverEnter(item, onDwell?)` 多带一个可选回调，目录卡片把 `showTrace` 传进去，不必另起一套 180ms 计时（否则两条线迟早对不齐）。
+6. **事件对象出了处理函数就失效**。延迟回调里要用卡片元素，必须先在处理函数里 `const cardEl = event.currentTarget` 存下来，不能把 `event` 带进定时器。
+
+### 实测（headless Edge + CDP：真实鼠标 hover + 真实触摸派发）
+
+| 断言 | 实测 |
+| --- | --- |
+| 悬停 110ms 不弹 / 260ms 弹 | ✓；未住满就移开 → 400ms 后仍无面板 ✓ |
+| 移开 110ms 仍在 / 370ms 已收 | ✓ |
+| 换卡不闪（A 住满 → 划到 B） | 12 次采样面板全程存在，内容换成新卡 ✓；始终只有 1 个面板 ✓ |
+| 折线与面板同一刻 | 105ms 两者都没有、260ms 两者都有；扫过则始终不画 ✓ |
+| 关闭三路 + 点面板内部不关 + 焦点落在 ✕ | ✓ |
+| 鼠标点卡片仍进详情页 | `/posts/14` ✓，跳转后无残留面板 ✓ |
+| 触屏第一下（文章卡） | 无导航 ✓、抽屉出现 ✓、此后 2 秒内 33 次采样一直开着（合成事件没误关）✓ |
+| 触屏第二下（同一张） | 进 `/posts/14` ✓ |
+| 触屏第二下（纯展示条目，游戏清单） | 不导航、抽屉收起 ✓ |
+| 触屏外链（Dribbble，`target=_blank`）第一下 / 第二下 | 新标签页 0 个 / 1 个 ✓ |
+| 触屏点另一条目 / 点页面空白 | 面板只剩 1 个且内容切换 ✓ / 关闭 ✓ |
+| 目录卡触屏第一下 / 第二下 | 开抽屉且不滚动 ✓ / 滚到 `#favorites` ✓ |
+| 窄屏鼠标窗口（520×800） | 仍是底部抽屉（贴底满宽、上圆角 24px、max-h 80vh），样式未变 ✓ |
+| `tsc --noEmit` / `npm run lint` | 均 0 问题 ✓ |
+
+### 工具：给截图脚本补的三样（脚本仍在仓库外 `%TEMP%\vcheck\visual.mjs`）
+
+- **`taps`**：`Input.dispatchTouchEvent` 的 touchStart/touchEnd 序列，可传 `{index: N}` 点第 N 个 `[data-preview-trigger]`（章节条目用 CSS 选不出来）。放在 `preEval` **之后**跑，于是可以先在页内埋好采样器再点。
+- **`extraTargets`**：每个 shot 前后数一次 page 类型的 CDP target，抓「页面偷偷开了新标签页」——外链 `target="_blank"` 的默认行为被 preventDefault 挡住没有，只能这样验。
+- **踩到的坑**：`Input.dispatchTouchEvent` 会合成完整 mouse 序列 + click。记录到的是 `touchstart,touchend,mousedown,mouseup,click`，所以挂在 click 上的守卫能被真实触摸走到，不必退回到「页内 `el.click()`」那种打折的验证方式。
+
+### 已知未做
+
+- 底部抽屉没有下滑关闭手势、没有把手：仓库没有任何手势基建，✕ / 点页面空白 / Esc 三条已经够用，这次不引进新的交互范式。
+- 触屏上「再点一下」的可用性有个几何前提：条目得没被抽屉盖住。抽屉高度是内容决定的（最长的文章预览约 385px），条目若本来就贴在屏幕底部，第二下会点在抽屉上——抽屉里的「阅读全文 →」是那条路的替代。

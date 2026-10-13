@@ -1,48 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Reveal } from "@/components/motion-kit";
 import { PostCard } from "@/components/site/post-card";
-import { PreviewPanel, PREVIEW_CLOSE_DELAY, type PreviewItem } from "@/components/site/preview-panel";
+import { usePreviewController } from "@/components/site/preview-controller";
+import { PreviewPanel, type PreviewItem } from "@/components/site/preview-panel";
 import type { PostCardData } from "@/lib/db/queries";
 import { formatDate } from "@/lib/format";
 
 /**
  * 文章卡片网格 + 右侧预览面板。
  *
- * 触发方式：**鼠标悬浮**卡片就预览（面板浮在右侧），移开约 180ms 后收起。
- * - 为什么延迟：快速从一排卡片上扫过时，鼠标会连续穿过好几张，
- *   每次都立刻开合会闪跳；留一个可取消的定时器，落在下一张卡片上就换内容、不闪。
- * - 鼠标从卡片**移到面板上**也不关：面板自己的 pointerenter 会取消那个定时器。
- * - 左右键点击卡片：照旧进文章详情页（卡片就是个普通 <Link>，没有任何拦截）。
+ * 触发方式：**鼠标在卡片上停够 180ms** 才预览（面板浮在右侧），移开约 180ms 后收起——
+ * 快速扫过一排卡片不会弹。触屏没有 hover：点卡片弹底部抽屉、**再点一次才进详情页**
+ * （第一下被守卫拦下，见 usePreviewController）。三种设备的时序都在那个 hook 里，
+ * 这里只负责接线。
  *
- * 触屏没有 hover：`(hover: hover) and (pointer: fine)` 不成立时干脆不挂鼠标事件
- * （面板因此不会弹），点卡片直接进详情页 —— 移动端不做两段式。
+ * 鼠标点到卡片本身：照旧进文章详情页（卡片就是个普通 <Link>，没有任何拦截）。
  *
  * 数据仍由服务端 PostList 查好、以可序列化的 PostCardData[] 传进来。
  */
-const FINE_POINTER = "(hover: hover) and (pointer: fine)";
-let finePointer: MediaQueryList | null = null;
-
-function getFinePointer() {
-  if (!finePointer) finePointer = window.matchMedia(FINE_POINTER);
-  return finePointer;
-}
-
-function subscribeFinePointer(onChange: () => void) {
-  const mq = getFinePointer();
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-
-/** 服务端快照恒为 false：首屏不挂鼠标事件，水合后再按真实设备决定（同 MouseGlow 的做法） */
-function getServerSnapshot() {
-  return false;
-}
 
 /** 文章 → 面板内容（四段：小字 / 标题 / 摘要 / 按钮） */
 export function postToPreview(post: PostCardData): PreviewItem {
   return {
+    // 稳定标识：卡片高亮、触屏「第二下」判定都用它，不比标题字符串
+    id: `post-${post.id}`,
     meta: `${formatDate(post.publishedAt)} · ${post.views} 次阅读`,
     title: post.title,
     summary: post.summary,
@@ -51,69 +33,30 @@ export function postToPreview(post: PostCardData): PreviewItem {
 }
 
 export function PostsGrid({ posts }: { posts: PostCardData[] }) {
-  const canHover = useSyncExternalStore(
-    subscribeFinePointer,
-    () => getFinePointer().matches,
-    getServerSnapshot,
-  );
-  const [selected, setSelected] = useState<PostCardData | null>(null);
-  const closeTimer = useRef<number | null>(null);
-
-  const cancelClose = useCallback(() => {
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }, []);
-
-  const openPreview = useCallback(
-    (post: PostCardData) => {
-      cancelClose();
-      setSelected(post);
-    },
-    [cancelClose],
-  );
-
-  /** 离开卡片或面板：延迟一下再收，中途落在别处会取消 */
-  const scheduleClose = useCallback(() => {
-    cancelClose();
-    closeTimer.current = window.setTimeout(() => {
-      setSelected(null);
-      closeTimer.current = null;
-    }, PREVIEW_CLOSE_DELAY);
-  }, [cancelClose]);
-
-  /** 硬关（✕ / Esc / 点空白）：不等延迟 */
-  const closeNow = useCallback(() => {
-    cancelClose();
-    setSelected(null);
-  }, [cancelClose]);
-
-  // 卸载时清掉未触发的定时器
-  useEffect(() => cancelClose, [cancelClose]);
+  const { item, hoverEnter, hoverLeave, guardClick, closeNow, panelHandlers } =
+    usePreviewController();
 
   return (
     <>
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {posts.map((post, index) => (
-          <Reveal key={post.id} delay={index * 0.08} className="h-full">
-            <PostCard
-              post={post}
-              active={selected?.id === post.id}
-              onHoverStart={canHover ? () => openPreview(post) : undefined}
-              onHoverEnd={canHover ? scheduleClose : undefined}
-            />
-          </Reveal>
-        ))}
+        {posts.map((post, index) => {
+          const preview = postToPreview(post);
+          return (
+            <Reveal key={post.id} delay={index * 0.08} className="h-full">
+              <PostCard
+                post={post}
+                active={item?.id === preview.id}
+                onHoverStart={() => hoverEnter(preview)}
+                onHoverEnd={hoverLeave}
+                onTap={(event) => guardClick(preview, event)}
+              />
+            </Reveal>
+          );
+        })}
       </div>
 
-      {selected ? (
-        <PreviewPanel
-          item={postToPreview(selected)}
-          onClose={closeNow}
-          onPointerEnter={cancelClose}
-          onPointerLeave={scheduleClose}
-        />
+      {item ? (
+        <PreviewPanel item={item} onClose={closeNow} {...panelHandlers} />
       ) : null}
     </>
   );

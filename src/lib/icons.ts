@@ -19,6 +19,6 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
   "/projects": FolderOpen,
   "/game": Gamepad2,
   "/music": Music,
-  "/books": BookOpen,
+  "/read": BookOpen,
   "/about": User,
 };

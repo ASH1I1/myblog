@@ -4,11 +4,8 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/motion-kit";
 import { ChapterLink } from "@/components/site/chapter-link";
-import {
-  PreviewPanel,
-  PREVIEW_CLOSE_DELAY,
-  type PreviewItem,
-} from "@/components/site/preview-panel";
+import { PreviewPanel, type PreviewItem } from "@/components/site/preview-panel";
+import { usePreviewController } from "@/components/site/preview-controller";
 import { chapterMeta } from "@/lib/chapters";
 import { SECTION_ICONS } from "@/lib/icons";
 import { showcaseNav } from "@/lib/showcase";
@@ -32,7 +29,7 @@ const ARROW = 8;
 const RIGHT_MARGIN = 40;
 /**
  * 前几张卡片走左侧路线。按需求点名的分组：最爱 / 项目 / 游戏 走左，
- * 音乐 / 著作 走右——所以是前 3 张，不是「按行内中线分」（游戏恰好压在中线上）。
+ * 音乐 / 读过 走右——所以是前 3 张，不是「按行内中线分」（游戏恰好压在中线上）。
  */
 const LEFT_CARDS = 3;
 
@@ -148,45 +145,18 @@ export function SectionIndex() {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [trace, setTrace] = useState<Trace | null>(null);
   const [phase, setPhase] = useState<Phase>("preview");
-  const [preview, setPreview] = useState<PreviewItem | null>(null);
-  const closeTimer = useRef<number | null>(null);
+
+  // 预览面板：与文章列表、章节条目同一个控制器（悬停住满 180ms 才弹、触屏点开底部抽屉）
+  const {
+    item: panel,
+    hoverEnter,
+    hoverLeave,
+    guardClick,
+    closeNow,
+    panelHandlers,
+  } = usePreviewController();
 
   const hideTrace = useCallback(() => setTrace(null), []);
-
-  /* ---- 预览面板：与文章列表同款（同一组件、同一延迟收起的手感） ---- */
-
-  const cancelClose = useCallback(() => {
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }, []);
-
-  const openPreview = useCallback(
-    (item: PreviewItem) => {
-      // 触屏不弹（tap 会合成 mouseenter）；减少动效只是不画折线，面板照给
-      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-      cancelClose();
-      setPreview(item);
-    },
-    [cancelClose],
-  );
-
-  const scheduleClose = useCallback(() => {
-    cancelClose();
-    closeTimer.current = window.setTimeout(() => {
-      setPreview(null);
-      closeTimer.current = null;
-    }, PREVIEW_CLOSE_DELAY);
-  }, [cancelClose]);
-
-  const closeNow = useCallback(() => {
-    cancelClose();
-    setPreview(null);
-  }, [cancelClose]);
-
-  // 卸载时清掉未触发的定时器
-  useEffect(() => cancelClose, [cancelClose]);
 
   const showTrace = useCallback(
     (id: string, cardEl: HTMLElement, index: number) => {
@@ -245,30 +215,36 @@ export function SectionIndex() {
           <div aria-hidden="true" className="hidden lg:block" />
 
           <nav aria-label="站点目录" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {showcaseNav.map((item, index) => {
-              const Icon = SECTION_ICONS[item.href];
-              const id = item.href.slice(1);
+            {showcaseNav.map((entry, index) => {
+              const Icon = SECTION_ICONS[entry.href];
+              const id = entry.href.slice(1);
+              const m = chapterMeta(id);
+              // 这张卡片的预览内容：悬停排队、触屏点击守卫、面板渲染都用同一份
+              const cardPreview: PreviewItem = {
+                id,
+                meta: `第 ${m.index} 章`,
+                title: m.label,
+                summary: m.tagline ?? entry.tagline,
+                // 进这一章：直接给锚点，和旧路由的重定向落点一致
+                action: { href: `/#${id}`, label: "进入这一章 →" },
+              };
               return (
-                <Reveal key={item.href} delay={index * 0.08} className="h-full">
+                <Reveal key={entry.href} delay={index * 0.08} className="h-full">
                   <div
                     className="h-full"
                     // 预览面板据此认出「这一下点在触发源上」：点卡片只换预览项，不关面板
                     data-preview-trigger=""
                     onMouseEnter={(event) => {
-                      showTrace(id, event.currentTarget, index);
-                      const m = chapterMeta(id);
-                      openPreview({
-                        meta: `第 ${m.index} 章`,
-                        title: m.label,
-                        summary: m.tagline ?? item.tagline,
-                        // 进这一章：直接给锚点，和旧路由的重定向落点一致
-                        action: { href: `/#${id}`, label: "进入这一章 →" },
-                      });
+                      // 事件对象出了处理函数就失效，卡片元素先取出来给 180ms 后的回调
+                      const cardEl = event.currentTarget;
+                      hoverEnter(cardPreview, () => showTrace(id, cardEl, index));
                     }}
                     onMouseLeave={() => {
                       hideTrace();
-                      scheduleClose();
+                      hoverLeave();
                     }}
+                    // 触屏：第一下拦下跳转、改成开抽屉；再点这张才放行（滚到该章）
+                    onClickCapture={(event) => guardClick(cardPreview, event)}
                   >
                     <ChapterLink
                       id={id}
@@ -280,8 +256,8 @@ export function SectionIndex() {
                         strokeWidth={1.75}
                         className="h-4 w-4 text-muted transition-colors duration-300 ease-out group-hover:text-klein"
                       />
-                      <span className="type-body mt-4 font-medium">{item.label}</span>
-                      <span className="type-label mt-2 text-muted">{item.tagline}</span>
+                      <span className="type-body mt-4 font-medium">{entry.label}</span>
+                      <span className="type-label mt-2 text-muted">{entry.tagline}</span>
                     </ChapterLink>
                   </div>
                 </Reveal>
@@ -326,14 +302,9 @@ export function SectionIndex() {
         ) : null}
       </div>
 
-      {/* 分类卡片的预览面板：与文章列表用同一个组件（样式完全一致） */}
-      {preview ? (
-        <PreviewPanel
-          item={preview}
-          onClose={closeNow}
-          onPointerEnter={cancelClose}
-          onPointerLeave={scheduleClose}
-        />
+      {/* 分类卡片的预览面板：与文章列表用同一个组件（样式与开关时序都一致） */}
+      {panel ? (
+        <PreviewPanel item={panel} onClose={closeNow} {...panelHandlers} />
       ) : null}
     </div>
   );

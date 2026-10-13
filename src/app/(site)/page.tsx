@@ -1,5 +1,5 @@
 import { AboutChapter } from "@/components/site/chapters/about-chapter";
-import { BooksChapter } from "@/components/site/chapters/books-chapter";
+import { ReadChapter } from "@/components/site/chapters/read-chapter";
 import { FavoritesChapter } from "@/components/site/chapters/favorites-chapter";
 import { GameChapter } from "@/components/site/chapters/game-chapter";
 import { MusicChapter } from "@/components/site/chapters/music-chapter";
@@ -35,7 +35,7 @@ export default function HomePage(props: { searchParams: SearchParams }) {
         <ProjectsChapter />
         <GameChapter />
         <MusicChapter />
-        <BooksChapter />
+        <ReadChapter />
         {/* 关于我压在页脚之前 */}
         <AboutChapter />
       </PageIntro>

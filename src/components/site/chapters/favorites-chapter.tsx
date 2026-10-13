@@ -1,6 +1,8 @@
 import { Reveal } from "@/components/motion-kit";
 import { Chapter } from "@/components/site/chapter";
 import { FavoriteStrip } from "@/components/site/favorite-strip";
+import { PreviewProvider } from "@/components/site/preview-provider";
+import { PreviewTrigger } from "@/components/site/preview-trigger";
 import { favoritesIntro, favoriteYears } from "@/lib/showcase";
 
 /** 04 最爱：按年份分章（内容全在 src/lib/showcase.ts，加条目只改那里） */
@@ -12,39 +14,55 @@ export function FavoritesChapter() {
 
   return (
     <Chapter id="favorites">
-      <Reveal>
-        <p className="type-body text-muted">{favoritesIntro}</p>
-      </Reveal>
+      <PreviewProvider>
+        <Reveal>
+          <p className="type-body text-muted">{favoritesIntro}</p>
+        </Reveal>
 
-      {years.map((group) => (
-        <section key={group.year} className="mt-14">
-          {/* 年份章：1 级字的大号数字（沿用全站「数字用等宽」的惯例） */}
-          <Reveal>
-            <h3 className="type-display font-mono">{group.year}</h3>
-          </Reveal>
+        {years.map((group) => (
+          <section key={group.year} className="mt-14">
+            {/* 年份章：1 级字的大号数字（沿用全站「数字用等宽」的惯例） */}
+            <Reveal>
+              <h3 className="type-display font-mono">{group.year}</h3>
+            </Reveal>
 
-          {/* 条目一律是同一种横幅条（见 favorite-strip.tsx）：
-              名字 + 浅灰小字描述在左，配图贴右缘在右，条上没有箭头。
-              配图优先取条目自己的 image，没写就退回该年的 cover
-              （2011 那条的书封照片就是这么来的）。
-              每条自带 1px 下边框，逐条排下来就是条目之间的浅灰细分隔线；
-              容器顶部补一条同款线收口，各年份的列表结构因此完全一致。 */}
-          <div className="mt-5 border-t border-border">
-            {group.items.map((link, index) => (
-              <Reveal key={link.name} delay={index * 0.08}>
-                <FavoriteStrip
-                  href={link.url}
-                  title={link.name}
-                  description={link.description}
-                  image={link.image ?? group.cover}
-                  imageFit={link.imageFit}
-                  badge={link.badge}
-                />
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      ))}
+            {/* 条目一律是同一种横幅条（见 favorite-strip.tsx）：
+                名字 + 浅灰小字描述在左，配图贴右缘在右，条上没有箭头。
+                配图优先取条目自己的 image，没写就退回该年的 cover
+                （2011 那条的书封照片就是这么来的）。
+                每条自带 1px 下边框，逐条排下来就是条目之间的浅灰细分隔线；
+                容器顶部补一条同款线收口，各年份的列表结构因此完全一致。
+                每条外层套 PreviewTrigger：悬浮弹右侧预览（meta＝年份、
+                标题＝名字、摘要＝描述；外链按钮开新窗口）。 */}
+            <div className="mt-5 border-t border-border">
+              {group.items.map((link, index) => (
+                <Reveal key={link.name} delay={index * 0.08}>
+                  <PreviewTrigger
+                    item={{
+                      meta: `最爱 · ${group.year}`,
+                      title: link.name,
+                      summary: link.description,
+                      action: {
+                        href: link.url,
+                        label: link.url.startsWith("/") ? "打开 →" : "打开链接 →",
+                      },
+                    }}
+                  >
+                    <FavoriteStrip
+                      href={link.url}
+                      title={link.name}
+                      description={link.description}
+                      image={link.image ?? group.cover}
+                      imageFit={link.imageFit}
+                      badge={link.badge}
+                    />
+                  </PreviewTrigger>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        ))}
+      </PreviewProvider>
     </Chapter>
   );
 }

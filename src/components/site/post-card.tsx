@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import type { PostCardData } from "@/lib/db/queries";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -10,18 +11,22 @@ import { cn } from "@/lib/utils";
  *   手机端与减少动效模式下自动关闭）
  * - 进场动画由列表侧的 motion-kit <Reveal delay={index * 0.08}> 负责
  * - 列表侧传来 `onHoverStart` / `onHoverEnd` 时（见 posts-grid.tsx），
- *   悬浮会弹右侧预览；点击始终是这个 <Link> 的普通跳转，没有任何拦截。
+ *   悬停会弹右侧预览；触屏的 `onTap` 在第一下拦下跳转、改成开抽屉。
+ *   鼠标点击始终是这个 <Link> 的普通跳转（守卫不拦鼠标）。
  */
 export function PostCard({
   post,
   onHoverStart,
   onHoverEnd,
+  onTap,
   active = false,
 }: {
   post: PostCardData;
-  /** 鼠标进入/离开卡片（只在能用鼠标的设备上传） */
+  /** 鼠标进入/离开卡片（触屏上会被 hook 忽略） */
   onHoverStart?: () => void;
   onHoverEnd?: () => void;
+  /** 点击守卫：触屏第一下开抽屉、点已开的那张才放行跳转（挂在捕获阶段，先于 <Link>） */
+  onTap?: (event: ReactMouseEvent) => void;
   /** 是否是预览面板当前展示的那张（描边点亮） */
   active?: boolean;
 }) {
@@ -32,6 +37,7 @@ export function PostCard({
       data-preview-trigger=""
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
+      onClickCapture={onTap}
     >
       <Link
         href={`/posts/${post.id}`}
