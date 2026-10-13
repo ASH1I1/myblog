@@ -7,11 +7,13 @@ import { createPortal } from "react-dom";
 /** 相框的定位（桌面上贴区块右半边垂直居中；窄屏流内居中）与外观，两条路径共用。
  *  外层 pointer-events-none + 本体 pointer-events-auto 是必须的：外框在桌面上是
  *  `inset-y-0 w-1/2` 的绝对定位盒子，铺满区块右半边整个高度又排在内容之后，
- *  不关掉指针事件就会把右半边整条带上的点击（比如条目行中段）全吃掉。 */
+ *  不关掉指针事件就会把右半边整条带上的点击（比如条目行中段）全吃掉。
+ *  本体不再留内边距：图片直接铺满整张卡片，圆角靠 overflow-hidden 裁；
+ *  bg-white 留着当图还没加载出来时的底色。 */
 const FRAME_WRAPPER =
   "pointer-events-none mt-10 flex justify-center md:absolute md:inset-y-0 md:right-8 md:mt-0 md:w-1/2 md:items-center md:justify-end";
 const FRAME_BOX =
-  "pointer-events-auto rounded-lg border border-border bg-white p-2 shadow-[0_22px_45px_-30px_rgba(16,16,16,0.6)] transition-transform duration-500 ease-out hover:scale-[1.03]";
+  "pointer-events-auto overflow-hidden rounded-lg border border-border bg-white shadow-[0_22px_45px_-30px_rgba(16,16,16,0.6)] transition-transform duration-500 ease-out hover:scale-[1.03]";
 
 /**
  * 「最爱」章里那张书封：装裱好的相框。点下去做什么，按条目的 url 分两条路：
@@ -68,13 +70,13 @@ export function CoverFrame({
       src={src}
       alt={`《${title}》封面`}
       loading="lazy"
-      // 横幅「裁切取景」：框内 342×202，加 8px 内边距与 1px 描边后整框正好 360×220；
-      // 窄屏靠 max-w-full 收窄、高度跟着 aspect-ratio 走，所以比例不会变形。
-      // （宽高比直接写在样式里，就不必再写 width/height 属性兜加载前的占位了。）
+      // 图片就是卡片的内容、铺满整张卡：图 358×218 + 1px 描边 = 整卡 360×220；
+      // 窄屏靠 max-w-full 收窄、高度跟着 aspect-ratio 走，比例不会变形，也不会溢出圆角
+      // （卡片的 overflow-hidden 负责裁圆角，所以这里不必再给图加圆角）。
       // object-cover + object-position 只取封面的一条横带：42% 让可见区域落在眼睛上，
-      // 顶部的书名与底部的出版社社徽都裁到框外。想上下微调只改第二个百分数
+      // 顶部的书名与底部的出版社社徽都裁到卡外。想上下微调只改第二个百分数
       // （数值越小取景越往上），第一个 50% 是左右居中，不用动。
-      className="block aspect-[342/202] w-[342px] max-w-full rounded-[3px] object-cover object-[50%_42%]"
+      className="block aspect-[358/218] w-[358px] max-w-full object-cover object-[50%_42%]"
     />
   );
 
