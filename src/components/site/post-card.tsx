@@ -74,8 +74,14 @@ export function PostCard({
             {post.title}
           </h3>
 
-          <p className="type-label mt-2 text-muted">
+          <p className="type-label mt-2 flex items-center gap-2 text-muted">
             <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
+            {/* 可发现性：点卡片是「弹预览」而不是直接跳转，给它一枚常驻小标签说明 */}
+            {onSelect ? (
+              <span className="rounded-full bg-klein/10 px-1.5 py-0.5 text-klein">
+                点击预览
+              </span>
+            ) : null}
           </p>
 
           <p className="type-body mt-3 line-clamp-3 flex-1 text-muted">
