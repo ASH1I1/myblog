@@ -38,8 +38,9 @@ export function CoverStrip({
 
       {/* 右：照片 + 最右端的小箭头。
           照片区按条高取 2:1（128×64），图 h-full + object-fit: cover 贴满，
-          再叠一个 scale-[1.12] 等比放大取景 —— 不变形、只看得到画面中间一条更紧的横带，
-          头像因此明显变大；放大部分由这一层的 overflow-hidden 裁掉，不会盖到箭头或条外。
+          再叠一个 scale-[1.3] 等比放大取景 —— 只缩放不拉伸（宽高比不变），
+          可见范围收成画面中间一条更紧的横带：额头到上唇那一带，眼睛落在画面约 35% 处。
+          放大部分由这一层的 overflow-hidden 裁掉，不会盖到箭头、也不会越出条高；
           左右仍用 mask 从透明渐入渐出，裁切边界是化开的，不是硬切。 */}
       <span className="relative ml-auto flex h-full items-center gap-3">
         <span className="relative h-full aspect-[2/1] overflow-hidden">
@@ -48,7 +49,7 @@ export function CoverStrip({
             src={cover}
             alt={`《${title}》封面`}
             loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[1.12] object-cover object-[50%_50%] [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]"
+            className="absolute inset-0 h-full w-full scale-[1.3] object-cover object-[50%_50%] [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]"
           />
         </span>
 
