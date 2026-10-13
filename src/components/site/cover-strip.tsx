@@ -38,18 +38,23 @@ export function CoverStrip({
 
       {/* 右：照片 + 最右端的小箭头。
           照片区按条高取 2:1（128×64），图 h-full + object-fit: cover 贴满，
-          再叠一个 scale-[1.3] 等比放大取景 —— 只缩放不拉伸（宽高比不变），
-          可见范围收成画面中间一条更紧的横带：额头到上唇那一带，眼睛落在画面约 35% 处。
-          放大部分由这一层的 overflow-hidden 裁掉，不会盖到箭头、也不会越出条高；
-          左右仍用 mask 从透明渐入渐出，裁切边界是化开的，不是硬切。 */}
+          再叠一个 scale-[2] 等比放大取景 —— 只缩放不拉伸（宽高比不变）。
+          「只露双眼」的取景是算出来的：源图里眼睛在 y≈270、圆框眼镜 235–310，
+          scale 2 把可见横带收到 111 源像素，object-position 纵向取 43% 再把这条带子
+          对到眼睛上 —— 于是画面里只剩双眼 + 圆框眼镜 + 两侧鬓角/胡须，
+          口鼻下巴与额头大部分都落在框外。
+          放大部分由图区那层 overflow-hidden 裁掉，不会盖到箭头、也不会越出条高。
+          左右渐隐的 mask 挂在**图区外层**而不是图上：挂图上会被 scale 一起放大，
+          边缘宽度就随缩放漂移；挂外层则永远是图区宽度的 8%，不随缩放变。
+          （两侧的鬓角是要露的，所以这圈渐隐收窄到 8%，只把最外侧化开。） */}
       <span className="relative ml-auto flex h-full items-center gap-3">
-        <span className="relative h-full aspect-[2/1] overflow-hidden">
+        <span className="relative h-full aspect-[2/1] overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={cover}
             alt={`《${title}》封面`}
             loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[1.3] object-cover object-[50%_50%] [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]"
+            className="absolute inset-0 h-full w-full scale-[2] object-cover object-[50%_43%]"
           />
         </span>
 
