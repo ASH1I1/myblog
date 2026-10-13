@@ -9,37 +9,30 @@ import { cn } from "@/lib/utils";
  * - 封面图内部视差：滚动时图片在卡片框内轻微移动（由 ParallaxImages 引擎驱动，
  *   手机端与减少动效模式下自动关闭）
  * - 进场动画由列表侧的 motion-kit <Reveal delay={index * 0.08}> 负责
- * - 列表侧传来 `onSelect` 时（见 posts-grid.tsx），点卡片改成「弹出右侧预览」，
- *   href 仍留着：按住修饰键/中键点、或面板里的「阅读全文」都照旧进详情页。
+ * - 列表侧传来 `onHoverStart` / `onHoverEnd` 时（见 posts-grid.tsx），
+ *   悬浮会弹右侧预览；点击始终是这个 <Link> 的普通跳转，没有任何拦截。
  */
 export function PostCard({
   post,
-  onSelect,
+  onHoverStart,
+  onHoverEnd,
   active = false,
 }: {
   post: PostCardData;
-  /** 有它才接管点击（不传就是普通链接卡片） */
-  onSelect?: (post: PostCardData) => void;
-  /** 是否是预览面板当前选中的那张（描边点亮） */
+  /** 鼠标进入/离开卡片（只在能用鼠标的设备上传） */
+  onHoverStart?: () => void;
+  onHoverEnd?: () => void;
+  /** 是否是预览面板当前展示的那张（描边点亮） */
   active?: boolean;
 }) {
   return (
-    <article className="group h-full">
+    <article
+      className="group h-full"
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
+    >
       <Link
         href={`/posts/${post.id}`}
-        onClick={
-          onSelect
-            ? (event) => {
-                // 带修饰键/中键＝想新开标签，保持浏览器原生行为
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-                  return;
-                }
-                event.preventDefault();
-                onSelect(post);
-              }
-            : undefined
-        }
-        aria-haspopup={onSelect ? "dialog" : undefined}
         className={cn(
           "relative flex h-full flex-col overflow-hidden rounded-xl border bg-background transition-[box-shadow,border-color,transform] duration-300 ease-out hover:-translate-y-1 hover:border-klein hover:shadow-md",
           active ? "border-klein shadow-md" : "border-border",
@@ -74,14 +67,8 @@ export function PostCard({
             {post.title}
           </h3>
 
-          <p className="type-label mt-2 flex items-center gap-2 text-muted">
+          <p className="type-label mt-2 text-muted">
             <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
-            {/* 可发现性：点卡片是「弹预览」而不是直接跳转，给它一枚常驻小标签说明 */}
-            {onSelect ? (
-              <span className="rounded-full bg-klein/10 px-1.5 py-0.5 text-klein">
-                点击预览
-              </span>
-            ) : null}
           </p>
 
           <p className="type-body mt-3 line-clamp-3 flex-1 text-muted">

@@ -31,9 +31,15 @@ import { formatDate } from "@/lib/format";
 export function PostPreviewPanel({
   post,
   onClose,
+  onPointerEnter,
+  onPointerLeave,
 }: {
   post: PostCardData;
   onClose: () => void;
+  /** 鼠标移进面板：取消「离开卡片后延迟收起」的定时器（不给的话点「阅读全文」得跟它赛跑） */
+  onPointerEnter?: () => void;
+  /** 鼠标移出面板：按同样的延迟收起 */
+  onPointerLeave?: () => void;
 }) {
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -83,6 +89,8 @@ export function PostPreviewPanel({
   return createPortal(
     <aside
       ref={panelRef}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
