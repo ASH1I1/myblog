@@ -20,23 +20,23 @@ export type ShowcaseSection = {
 
 /**
  * 收藏条目。
- * `url` 以 `/` 开头＝站内路径：条目行与封面相框都直接进站内页面（图标用 →）；
- * 否则是外链，走新窗口（图标 ↗）。
- * `note` 可选：外链条目点开书封灯箱后，右侧正文里那段「你和这本书的故事」；
- * 不填时灯箱里就不出现这一段（条目本身照常显示）。
+ * `url` 以 `/` 开头＝站内路径（当前标签页进入）；否则是外链（新窗口打开）。
+ * `image` 可选：条目横幅条右端那张图的路径（public/ 下的）。**现在是占位图**，
+ *   真图到位后直接覆盖 `public/favorites/<slug>.svg`，或在这里换路径即可。
+ * `note` 可选：外链条目灯箱里的短文（当前没有条目在用，留着备用）。
  */
 export type FavoriteLink = {
   name: string;
   description: string;
   url: string;
   emoji: string;
+  image?: string;
   note?: string;
 };
 /**
  * 收藏按年份分章：一年一章，年份从早到晚，章内按加入先后排。
- * `cover` 可选：该年的书封（public/ 下的路径）。有它才渲染那张相框，
- * 相框点下去去哪由 `items` 里**第一条**的 url 决定——站内路径就进文章页，
- * 外链才弹灯箱（见 cover-lightbox.tsx）；没有 cover 就整块不渲染。
+ * `cover` 可选：该年的**默认配图**（public/ 下的路径）——条目自己没写 `image` 时用它，
+ * 2011 那条就是靠它显示书封照片。两者都没有的条目只显示文字。
  */
 export type FavoriteYear = {
   year: number;
@@ -104,26 +104,26 @@ export const favoriteYears: FavoriteYear[] = [
   {
     year: 2024,
     items: [
-      { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com" },
-      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so" },
-      { name: "哔哩哔哩", emoji: "📺", description: "学习区和游戏区的常驻观众", url: "https://www.bilibili.com" },
-      { name: "机核", emoji: "🎲", description: "游戏文化、电台与深度文章", url: "https://www.gcores.com" },
-      { name: "知乎", emoji: "💬", description: "偶尔回答一些技术问题", url: "https://www.zhihu.com" },
+      { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com", image: "/favorites/github.svg" },
+      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so", image: "/favorites/notion.svg" },
+      { name: "哔哩哔哩", emoji: "📺", description: "学习区和游戏区的常驻观众", url: "https://www.bilibili.com", image: "/favorites/bilibili.svg" },
+      { name: "机核", emoji: "🎲", description: "游戏文化、电台与深度文章", url: "https://www.gcores.com", image: "/favorites/gcores.svg" },
+      { name: "知乎", emoji: "💬", description: "偶尔回答一些技术问题", url: "https://www.zhihu.com", image: "/favorites/zhihu.svg" },
     ],
   },
   {
     year: 2025,
     items: [
-      { name: "Figma", emoji: "🎨", description: "界面设计，从草图到成品", url: "https://www.figma.com" },
-      { name: "Excalidraw", emoji: "✏️", description: "随手画架构图与白板草稿", url: "https://excalidraw.com" },
-      { name: "少数派", emoji: "📰", description: "数字生活与效率工具的好内容", url: "https://sspai.com" },
+      { name: "Figma", emoji: "🎨", description: "界面设计，从草图到成品", url: "https://www.figma.com", image: "/favorites/figma.svg" },
+      { name: "Excalidraw", emoji: "✏️", description: "随手画架构图与白板草稿", url: "https://excalidraw.com", image: "/favorites/excalidraw.svg" },
+      { name: "少数派", emoji: "📰", description: "数字生活与效率工具的好内容", url: "https://sspai.com", image: "/favorites/sspai.svg" },
     ],
   },
   {
     year: 2026,
     items: [
-      { name: "Dribbble", emoji: "🖌️", description: "一口气能刷一小时的设计作品集", url: "https://dribbble.com" },
-      { name: "Awwwards", emoji: "🏆", description: "每年最好看的网页都在这里", url: "https://www.awwwards.com" },
+      { name: "Dribbble", emoji: "🖌️", description: "一口气能刷一小时的设计作品集", url: "https://dribbble.com", image: "/favorites/dribbble.svg" },
+      { name: "Awwwards", emoji: "🏆", description: "每年最好看的网页都在这里", url: "https://www.awwwards.com", image: "/favorites/awwwards.svg" },
     ],
   },
 ];
