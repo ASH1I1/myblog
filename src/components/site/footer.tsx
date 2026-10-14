@@ -1,18 +1,18 @@
+import { getContent } from "@/lib/content/store";
 import { getCurrentYear } from "@/lib/db/queries";
 import { siteConfig } from "@/lib/site-config";
 
 /**
  * 全局页脚（两栏）：左侧站名与版权；右侧邮箱与 GitHub 链接
- * （链接来自 site-config.ts 的 about.contacts）。
+ * （链接来自内容数据里的 `about.contacts`，与「关于我」章的联系方式同一处——
+ * 2026-10-14 之前读的是 `site-config.ts` 的 `about.contacts`，联系方式搬进
+ * `data/content.json` 后跟着改，否则后台改了联系方式、页脚不会变）。
  */
 export async function Footer() {
   const year = await getCurrentYear();
-  const email = siteConfig.about.contacts.find((contact) =>
-    contact.href.startsWith("mailto:"),
-  );
-  const github = siteConfig.about.contacts.find((contact) =>
-    contact.href.includes("github"),
-  );
+  const { about } = await getContent();
+  const email = about.contacts.find((contact) => contact.href.startsWith("mailto:"));
+  const github = about.contacts.find((contact) => contact.href.includes("github"));
 
   const linkClass =
     "type-label text-muted underline-offset-4 transition-colors duration-300 ease-out hover:text-klein hover:underline";

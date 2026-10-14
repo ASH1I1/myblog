@@ -16,7 +16,7 @@ export default async function AdminDashboardLayout({
   const admin = await requireAdminForRender();
 
   return (
-    <div className="min-h-dvh lg:pl-60">
+    <div className="admin-scope min-h-dvh lg:pl-60">
       <AdminNav username={admin.username} />
       <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
     </div>

@@ -21,17 +21,17 @@ export function MarkdownEditor({
 
   const tabClass = (active: boolean) =>
     cn(
-      "inline-flex min-h-10 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors",
+      "type-label inline-flex min-h-10 flex-1 items-center justify-center rounded-md px-3 font-medium transition-colors duration-300 ease-out",
       active ? "bg-background text-foreground shadow-sm" : "text-muted",
     );
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label htmlFor="content" className="text-sm font-medium">
+        <label htmlFor="content" className="type-label font-medium text-muted">
           正文（Markdown）
         </label>
-        <span className="text-xs text-muted tabular-nums">
+        <span className="type-label font-mono text-muted tabular-nums">
           {value.length.toLocaleString("zh-CN")} 字符
         </span>
       </div>
@@ -72,16 +72,16 @@ export function MarkdownEditor({
             rows={18}
             spellCheck={false}
             placeholder={"# 从这里开始写\n\n支持 Markdown：标题、列表、引用、代码块、图片、链接…"}
-            className="min-h-[26rem] w-full rounded-md border border-border bg-background p-3 font-mono text-sm leading-relaxed placeholder:text-muted focus:border-primary focus:outline-none"
+            className="min-h-[26rem] w-full rounded-lg border border-border bg-background p-3 font-mono text-sm leading-relaxed placeholder:text-muted focus:border-klein focus:outline-none"
           />
         </div>
 
         <div className={cn(tab === "preview" ? "block" : "hidden", "lg:block")}>
-          <div className="min-h-[26rem] overflow-x-auto rounded-md border border-border bg-surface p-4">
+          <div className="min-h-[26rem] overflow-x-auto rounded-lg border border-border bg-surface p-4">
             {value.trim() ? (
               <MarkdownRenderer>{value}</MarkdownRenderer>
             ) : (
-              <p className="text-sm text-muted">
+              <p className="type-body text-muted">
                 （暂无内容，输入后这里会实时预览）
               </p>
             )}
@@ -89,7 +89,7 @@ export function MarkdownEditor({
         </div>
       </div>
 
-      {error ? <p className="mt-1.5 text-sm text-danger">{error}</p> : null}
+      {error ? <p className="type-label mt-1.5 text-danger">{error}</p> : null}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { ChapterLink } from "@/components/site/chapter-link";
 import { PreviewPanel, type PreviewItem } from "@/components/site/preview-panel";
 import { usePreviewController } from "@/components/site/preview-controller";
 import { chapterMeta } from "@/lib/chapters";
+import type { ChapterPreviewList } from "@/lib/content/types";
 import { SECTION_ICONS } from "@/lib/icons";
 import { showcaseNav } from "@/lib/showcase";
 
@@ -18,25 +19,18 @@ const CORNER = 12;
 const SPEED = 2500;
 const MIN_DURATION = 0.35;
 /**
- * 上限只作兜底。**不能按「总时长」封顶**：右侧路线比左侧长得多（要先绕到页面右缘
- * 再折回来），一旦被上限截断，它在屏幕内的那一段就会变快——需求明确要求「速度保持
- * 现在的节奏，别因为路长就变快」，所以这里留得足够宽，让速度恒为 SPEED。
+ * 上限只作兜底。**不能按「总时长」封顶**：一旦被上限截断，线在屏幕内的那一段就会变快
+ * ——需求明确要求「速度保持现在的节奏，别因为路长就变快」，所以这里留得足够宽，
+ * 让速度恒为 SPEED。
  */
 const MAX_DURATION = 6;
 /** 箭头尺寸 */
 const ARROW = 8;
-/** 右侧路线贴的页面右边距 */
-const RIGHT_MARGIN = 40;
-/**
- * 前几张卡片走左侧路线。按需求点名的分组：最爱 / 项目 / 游戏 走左，
- * 音乐 / 读过 走右——所以是前 3 张，不是「按行内中线分」（游戏恰好压在中线上）。
- */
-const LEFT_CARDS = 3;
 
 type Trace = {
   /** SVG path，坐标相对卡片行容器左上角 */
   d: string;
-  /** 箭头的多边形 points（朝下或朝左，随路线而定） */
+  /** 箭头的多边形 points */
   arrow: string;
   width: number;
   height: number;
@@ -50,54 +44,17 @@ type Phase = "preview" | "active" | "fading";
  * 两张 rect 都是视口坐标，相减即得相对于容器左上角的坐标——
  * 不涉及 scrollY，所以悬浮期间页面即使滚了，线也不会和目标脱开。
  *
- * 按卡片在行内的位置分两种走法：
- * - `left`（前 3 张）：先下 → 拐左进书签列 → 再下，**2 个拐点**，
- *   从标题**上缘**接入，箭头朝下。
- * - `right`（后 2 张）：先下 → 拐右 → 沿页面右缘下行 → 到标题高度再拐左，
- *   **3 个拐点**，从标题**右侧**横向接入，箭头朝左。
+ * **五张卡片一律走左侧路线**：从卡片下缘中点起笔 → 先下 48px → 圆角拐左、
+ * 横穿进书签列 → 再圆角拐下 → 接到标题**上缘**，末端箭头朝下。**2 个拐点**。
+ *
+ * （2026-10-14 改：此前后两张——音乐 / 读过——走的是「先下 → 拐右 → 沿页面右缘下行 →
+ * 再拐左横向接进标题右侧」的右侧路线，用户要求把它们也挪到左边、五张风格统一，
+ * 于是删掉了那条分支与它的两个常量。要恢复：git 历史里这一版之前的实现是完整的。）
  */
-function buildTrace(
-  card: DOMRect,
-  title: DOMRect,
-  origin: DOMRect,
-  side: "left" | "right",
-  rightEdgeX: number,
-): Trace | null {
+function buildTrace(card: DOMRect, title: DOMRect, origin: DOMRect): Trace | null {
   const sx = card.left + card.width / 2 - origin.left;
   const sy = card.bottom - origin.top;
   const midY = sy + DROP;
-
-  if (side === "right") {
-    // 页面右缘（相对容器）：绕出去这一段会超出容器宽度，靠 SVG 的 overflow-visible 画出来
-    const rx = rightEdgeX - origin.left;
-    // 横着接进标题：纵坐标取标题的竖直中点，终点落在标题右侧
-    const ty = title.top + title.height / 2 - origin.top;
-    const endX = title.left + title.width - origin.left + ARROW + 2;
-    if (ty <= midY + 2 * CORNER || rx <= sx + 2 * CORNER) return null;
-
-    const d = [
-      `M ${sx} ${sy}`,
-      `L ${sx} ${midY - CORNER}`,
-      `Q ${sx} ${midY} ${sx + CORNER} ${midY}`, // 向右拐
-      `L ${rx - CORNER} ${midY}`,
-      `Q ${rx} ${midY} ${rx} ${midY + CORNER}`, // 向下拐
-      `L ${rx} ${ty - CORNER}`,
-      `Q ${rx} ${ty} ${rx - CORNER} ${ty}`, // 向左拐
-      `L ${endX} ${ty}`,
-    ].join(" ");
-
-    const length =
-      DROP + (rx - sx) + (ty - midY) + (rx - endX) + 3 * CORNER;
-
-    return {
-      d,
-      // 朝左的箭头
-      arrow: `M ${endX} ${ty - 4} L ${endX} ${ty + 4} L ${endX - ARROW} ${ty} Z`,
-      width: Math.ceil(Math.max(origin.width, rx + 32)),
-      height: Math.ceil(ty + 24),
-      duration: Math.min(MAX_DURATION, Math.max(MIN_DURATION, length / SPEED)),
-    };
-  }
 
   const tx = title.left + title.width / 2 - origin.left;
   // 从标题上缘接进来，再往上一点给箭头留位置
@@ -139,9 +96,19 @@ function buildTrace(
  * 悬浮/点击卡片时从卡片画一条克莱因蓝折线连到目标章节的竖排标题——
  * 像电路板走线，先下后左两个圆角拐点。线在整页坐标里画到标题本身，
  * 所以有几千像素长、绝大部分在屏幕外；屏幕内看到的是它向下冲出视口。
+ * **五张卡片同一种走法**（2026-10-14 起：音乐 / 读过 也从右侧路线改回左侧，
+ * 于是全行统一——详见 buildTrace 的注释）。
  * 触屏没有悬浮、减少动效下也不该有这种花活，两种情况都不画。
  */
-export function SectionIndex() {
+export function SectionIndex({
+  lists,
+}: {
+  /**
+   * 五个板块的「本章小预览」行数据，键＝章节 id —— **由首页（服务端）算好传进来**。
+   * 内容是运行时从 `data/content.json` 读的，这个组件在浏览器里拿不到文件。
+   */
+  lists: Record<string, ChapterPreviewList | undefined>;
+}) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [trace, setTrace] = useState<Trace | null>(null);
   const [phase, setPhase] = useState<Phase>("preview");
@@ -159,7 +126,7 @@ export function SectionIndex() {
   const hideTrace = useCallback(() => setTrace(null), []);
 
   const showTrace = useCallback(
-    (id: string, cardEl: HTMLElement, index: number) => {
+    (id: string, cardEl: HTMLElement) => {
       // 触屏（无悬浮）与「减少动效」下不画线
       if (
         !window.matchMedia("(hover: hover) and (pointer: fine)").matches ||
@@ -177,8 +144,6 @@ export function SectionIndex() {
         cardEl.getBoundingClientRect(),
         title.getBoundingClientRect(),
         wrap.getBoundingClientRect(),
-        index < LEFT_CARDS ? "left" : "right",
-        document.documentElement.clientWidth - RIGHT_MARGIN,
       );
       if (!next) return;
       setPhase("preview");
@@ -225,8 +190,9 @@ export function SectionIndex() {
                 meta: `第 ${m.index} 章`,
                 title: m.label,
                 summary: m.tagline ?? entry.tagline,
-                // 进这一章：直接给锚点，和旧路由的重定向落点一致
-                action: { href: `/#${id}`, label: "进入这一章 →" },
+                // 和章内条目的面板同一形态：本章内容小预览 + 不带跳转按钮
+                // （进这一章靠卡片本身——点卡片仍是 ChapterLink 的锚点跳转）
+                list: lists[id],
               };
               return (
                 <Reveal key={entry.href} delay={index * 0.08} className="h-full">
@@ -237,7 +203,7 @@ export function SectionIndex() {
                     onMouseEnter={(event) => {
                       // 事件对象出了处理函数就失效，卡片元素先取出来给 180ms 后的回调
                       const cardEl = event.currentTarget;
-                      hoverEnter(cardPreview, () => showTrace(id, cardEl, index));
+                      hoverEnter(cardPreview, () => showTrace(id, cardEl));
                     }}
                     onMouseLeave={() => {
                       hideTrace();

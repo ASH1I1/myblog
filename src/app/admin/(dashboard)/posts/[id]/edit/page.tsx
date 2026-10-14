@@ -23,14 +23,14 @@ export default async function AdminEditPostPage(
   // PRD 3.3.3 B：文章 ID 不存在时展示错误提示与返回入口
   if (!post) {
     return (
-      <div className="mx-auto max-w-md rounded-xl border border-border bg-background p-8 text-center">
+      <div className="mx-auto max-w-md rounded-2xl border border-border bg-background p-8 text-center">
         <h1 className="text-lg font-semibold">文章不存在</h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="type-body mt-3 text-muted">
           它可能已被删除，或者链接不正确。
         </p>
         <Link
           href="/admin/posts"
-          className="mt-5 inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-strong"
+          className="type-label mt-6 inline-flex min-h-11 items-center rounded-full bg-foreground px-6 font-medium text-background transition-opacity duration-300 ease-out hover:opacity-80"
         >
           返回文章列表
         </Link>
@@ -44,7 +44,7 @@ export default async function AdminEditPostPage(
         <h1 className="text-2xl font-semibold">编辑文章</h1>
         <Link
           href="/admin/posts"
-          className="text-sm text-muted transition-colors hover:text-primary"
+          className="type-label text-muted transition-colors duration-300 ease-out hover:text-klein"
         >
           返回列表
         </Link>

@@ -13,6 +13,9 @@ import { cn } from "@/lib/utils";
  * - 列表侧传来 `onHoverStart` / `onHoverEnd` 时（见 posts-grid.tsx），
  *   悬停会弹右侧预览；触屏的 `onTap` 在第一下拦下跳转、改成开抽屉。
  *   鼠标点击始终是这个 <Link> 的普通跳转（守卫不拦鼠标）。
+ *
+ * 三个回调都把 `post` 交回给调用方，调用方因此可以传**稳定引用**——
+ * 外层 PostCardItem 靠 memo 拦掉无关卡片的 re-render，回调若不稳就白 memo 了。
  */
 export function PostCard({
   post,
@@ -23,10 +26,10 @@ export function PostCard({
 }: {
   post: PostCardData;
   /** 鼠标进入/离开卡片（触屏上会被 hook 忽略） */
-  onHoverStart?: () => void;
+  onHoverStart?: (post: PostCardData) => void;
   onHoverEnd?: () => void;
   /** 点击守卫：触屏第一下开抽屉、点已开的那张才放行跳转（挂在捕获阶段，先于 <Link>） */
-  onTap?: (event: ReactMouseEvent) => void;
+  onTap?: (post: PostCardData, event: ReactMouseEvent) => void;
   /** 是否是预览面板当前展示的那张（描边点亮） */
   active?: boolean;
 }) {
@@ -35,17 +38,26 @@ export function PostCard({
       className="group h-full"
       // 预览面板据此认出「这一下点在触发源上」：点卡片只换预览项，不关面板
       data-preview-trigger=""
-      onMouseEnter={onHoverStart}
+      onMouseEnter={onHoverStart ? () => onHoverStart(post) : undefined}
       onMouseLeave={onHoverEnd}
-      onClickCapture={onTap}
+      onClickCapture={onTap ? (event) => onTap(post, event) : undefined}
     >
       <Link
         href={`/posts/${post.id}`}
-        className={cn(
-          "relative flex h-full flex-col overflow-hidden rounded-xl border bg-background transition-[box-shadow,border-color,transform] duration-300 ease-out hover:-translate-y-1 hover:border-klein hover:shadow-md",
-          active ? "border-klein shadow-md" : "border-border",
-        )}
+        className="group/card relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-background transition-transform duration-300 ease-out hover:-translate-y-1"
       >
+        {/* 高亮层（克莱因蓝描边 + 阴影）：整层 `opacity` 淡入，代替过渡 `border-color` / `box-shadow`。
+            后两者每一帧都要重绘卡片这一整块，而卡片网格右侧正压着带 `backdrop-blur` 的预览面板——
+            页面上任何一块重绘都会让那层模糊重算，快速划过一排卡片时掉帧就是这么来的。
+            opacity 由合成器处理；终点状态与原来一致（预览选中的那张直接给 100%）。
+            注意是**命名 group**（group/card）：外层 article 上的无名 group 还要留给封面图的悬停放大。 */}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute inset-0 z-20 rounded-xl border border-klein shadow-md transition-opacity duration-300 ease-out group-hover/card:opacity-100",
+            active ? "opacity-100" : "opacity-0",
+          )}
+        />
         {/* 角标：克莱因蓝小方块（拼贴元素） */}
         <span
           aria-hidden="true"

@@ -24,8 +24,8 @@ export type PostFormInitial = {
 const initialState: PostFormState = { fieldErrors: {}, formError: null };
 
 const inputClass =
-  "block w-full rounded-md border border-border bg-background px-3 py-2 text-base " +
-  "placeholder:text-muted focus:border-primary focus:outline-none";
+  "block w-full rounded-lg border border-border bg-background px-3 py-2 text-base " +
+  "placeholder:text-muted focus:border-klein focus:outline-none";
 
 /**
  * 文章表单（新建 / 编辑复用，PRD 3.3.3 B）。
@@ -85,14 +85,14 @@ export function PostForm({
       {state.formError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"
+          className="type-label rounded-lg border border-danger/40 bg-background px-4 py-3 text-danger"
         >
           {state.formError}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="title" className="mb-1.5 block text-sm font-medium">
+        <label htmlFor="title" className="type-label mb-1.5 block font-medium text-muted">
           标题 <span className="text-danger">*</span>
         </label>
         <input
@@ -108,12 +108,12 @@ export function PostForm({
           aria-invalid={Boolean(fieldError("title"))}
         />
         {fieldError("title") ? (
-          <p className="mt-1.5 text-sm text-danger">{fieldError("title")}</p>
+          <p className="type-label mt-1.5 text-danger">{fieldError("title")}</p>
         ) : null}
       </div>
 
       <div>
-        <label htmlFor="summary" className="mb-1.5 block text-sm font-medium">
+        <label htmlFor="summary" className="type-label mb-1.5 block font-medium text-muted">
           摘要
         </label>
         <textarea
@@ -128,7 +128,7 @@ export function PostForm({
           aria-invalid={Boolean(fieldError("summary"))}
         />
         {fieldError("summary") ? (
-          <p className="mt-1.5 text-sm text-danger">{fieldError("summary")}</p>
+          <p className="type-label mt-1.5 text-danger">{fieldError("summary")}</p>
         ) : null}
       </div>
 
@@ -142,7 +142,7 @@ export function PostForm({
       />
 
       <div>
-        <label htmlFor="coverImage" className="mb-1.5 block text-sm font-medium">
+        <label htmlFor="coverImage" className="type-label mb-1.5 block font-medium text-muted">
           封面图链接（可选）
         </label>
         <input
@@ -158,14 +158,14 @@ export function PostForm({
           aria-invalid={Boolean(fieldError("coverImage"))}
         />
         {fieldError("coverImage") ? (
-          <p className="mt-1.5 text-sm text-danger">{fieldError("coverImage")}</p>
+          <p className="type-label mt-1.5 text-danger">{fieldError("coverImage")}</p>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rule-fade-t flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/admin/posts"
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-surface"
+          className="type-label inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-5 font-medium transition-colors duration-300 ease-out hover:border-klein hover:text-klein"
         >
           返回列表
         </Link>
@@ -175,7 +175,7 @@ export function PostForm({
             type="submit"
             disabled={pending}
             onClick={() => submitWithStatus("draft")}
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="type-label inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-5 font-medium transition-colors duration-300 ease-out hover:border-klein hover:text-klein disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending && intent === "draft" ? "保存中…" : "保存草稿"}
           </button>
@@ -183,7 +183,7 @@ export function PostForm({
             type="submit"
             disabled={pending}
             onClick={() => submitWithStatus("published")}
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-60"
+            className="type-label inline-flex min-h-11 items-center justify-center rounded-full bg-foreground px-6 font-medium text-background transition-opacity duration-300 ease-out hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending && intent === "published"
               ? "提交中…"

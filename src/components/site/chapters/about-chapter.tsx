@@ -1,15 +1,21 @@
 import { CharReveal, Reveal } from "@/components/motion-kit";
 import { Chapter } from "@/components/site/chapter";
 import { MarkdownRenderer } from "@/components/site/markdown";
+import { getContent } from "@/lib/content/store";
 import { siteConfig } from "@/lib/site-config";
 
 /**
  * 03 关于我：整页内容（名片 + 简介 + 技能经历 + 联系方式）。
  * 章内分区的标题用 h3 —— 章节标题（PageHeader 的竖排书签）是 h2，
  * 整页唯一的 h1 是首屏 Hero 的站名。
+ *
+ * 数据分两处（2026-10-14 与用户确认的边界）：
+ * - **简介 / 技能经历 / 联系方式** 在 `data/content.json`（后台 /admin/content/about 可编辑）；
+ * - **名字 / 标语 / 头像** 在 `site-config.ts` 的 `author` 里（站点级，与页脚、标签页标题共用）。
  */
-export function AboutChapter() {
-  const { author, about } = siteConfig;
+export async function AboutChapter() {
+  const { author } = siteConfig;
+  const { about } = await getContent();
 
   return (
     <Chapter id="about">

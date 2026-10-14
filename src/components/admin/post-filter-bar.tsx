@@ -60,8 +60,8 @@ export function PostFilterBar({
   };
 
   const controlClass =
-    "h-11 rounded-md border border-border bg-background px-3 text-sm transition-colors " +
-    "placeholder:text-muted focus:border-primary focus:outline-none";
+    "h-11 rounded-lg border border-border bg-background px-3 text-sm transition-colors duration-300 ease-out " +
+    "placeholder:text-muted focus:border-klein focus:outline-none";
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -100,7 +100,7 @@ export function PostFilterBar({
         <button
           type="button"
           onClick={clearFilters}
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-4 text-sm transition-colors hover:border-primary hover:text-primary"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-5 text-sm transition-colors duration-300 ease-out hover:border-klein hover:text-klein"
         >
           清空筛选
         </button>

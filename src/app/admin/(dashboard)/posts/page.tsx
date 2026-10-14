@@ -35,7 +35,7 @@ export default async function AdminPostsPage(props: PageProps<"/admin/posts">) {
         <h1 className="text-2xl font-semibold">文章管理</h1>
         <Link
           href="/admin/posts/new"
-          className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-strong"
+          className="type-label inline-flex min-h-11 items-center rounded-full bg-foreground px-6 font-medium text-background transition-opacity duration-300 ease-out hover:opacity-80"
         >
           新建文章
         </Link>
@@ -44,7 +44,7 @@ export default async function AdminPostsPage(props: PageProps<"/admin/posts">) {
       {saved ? (
         <p
           role="status"
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          className="type-label rounded-lg border border-klein/40 px-4 py-3 text-klein"
         >
           保存成功
         </p>

@@ -62,13 +62,30 @@ export function scrollToTop() {
 }
 
 /**
+ * 上一次「hash 校正」把页面摆到的位置。用来判断这期间用户是不是自己滚走了——
+ * 校正的定时器挂在首屏的 400ms / 1400ms / fonts.ready 上，而用户往往在页面刚打开
+ * 就开始往下滚；不判断的话那几次校正会把已经滚远的页面**硬拉回该章节**，
+ * 表现就是「往下滚着滚着突然往上跳一下」（实测一次 -3139px，p95 全被它带崩）。
+ */
+let lastCorrectionY: number | null = null;
+
+/**
  * 把当前 URL 上的 hash 落到位（旧地址 /favorites 重定向来的 /#favorites 走这条）。
  * 浏览器原生已经跳过一次，但那一下是在「PageIntro 还带 scale、章节 01 的列表还没
  * 流式补发」的几何下算的，位置会偏；所以在几个时间点各校正一次。
+ *
+ * **但只要用户已经自己滚走了就收手**：后面几次校正的意义是把落点摆正，
+ * 不是把用户拽回来。判断方式就是「当前位置还等于上次校正摆的那儿吗」——
+ * 期间用户（或 Lenis 的平滑滚动）把它挪走了，就整个放弃，不再干预。
  */
 function landOnHash() {
   const id = decodeURIComponent(window.location.hash.slice(1));
-  if (id) scrollToSection(id, { immediate: true });
+  if (!id) return;
+  if (lastCorrectionY !== null && Math.abs(window.scrollY - lastCorrectionY) > 4) {
+    return;
+  }
+  scrollToSection(id, { immediate: true });
+  lastCorrectionY = window.scrollY;
 }
 
 /**
@@ -86,6 +103,7 @@ export function SmoothScroll() {
     // PageIntro 清掉内联样式（其兜底定时器是 1300ms）之后各一次
     let timers: number[] = [];
     if (window.location.hash.length > 1) {
+      lastCorrectionY = null; // 每次带 hash 的落地都重新开始判断（别拿上一次的值当基准）
       landOnHash();
       timers = [400, 1400].map((ms) => window.setTimeout(landOnHash, ms));
       void document.fonts?.ready.then(landOnHash);

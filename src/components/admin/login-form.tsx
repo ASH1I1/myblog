@@ -6,8 +6,8 @@ import { loginAction, type LoginState } from "@/actions/auth";
 const initialState: LoginState = { error: null };
 
 const inputClass =
-  "block w-full rounded-md border border-border bg-background px-3 py-2 text-base " +
-  "placeholder:text-muted focus:border-primary focus:outline-none " +
+  "block w-full rounded-lg border border-border bg-background px-3 py-2 text-base " +
+  "placeholder:text-muted focus:border-klein focus:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
@@ -36,15 +36,15 @@ export function LoginForm({
   return (
     <form
       action={formAction}
-      className="w-full max-w-[400px] rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8"
+      className="w-full max-w-[400px] rounded-2xl border border-border bg-background p-6 shadow-sm sm:p-8"
     >
       <h1 className="text-xl font-semibold">登录后台</h1>
-      <p className="mt-1 text-sm text-muted">仅博主本人可访问管理后台</p>
+      <p className="type-label mt-1.5 text-muted">仅博主本人可访问管理后台</p>
 
       {sessionExpired ? (
         <p
           role="status"
-          className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700"
+          className="type-label mt-4 rounded-lg border border-border bg-surface px-3 py-2 text-muted"
         >
           登录状态已过期，请重新登录。
         </p>
@@ -54,7 +54,7 @@ export function LoginForm({
 
       <div className="mt-6 space-y-4">
         <div>
-          <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
+          <label htmlFor="username" className="type-label mb-1.5 block font-medium text-muted">
             账号
           </label>
           <input
@@ -70,7 +70,7 @@ export function LoginForm({
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium">
+          <label htmlFor="password" className="type-label mb-1.5 block font-medium text-muted">
             密码
           </label>
           <input
@@ -90,7 +90,7 @@ export function LoginForm({
       <p
         role="alert"
         aria-live="polite"
-        className="mt-4 min-h-5 text-sm text-danger"
+        className="type-label mt-4 min-h-5 text-danger"
       >
         {state.error ?? ""}
       </p>
@@ -98,7 +98,7 @@ export function LoginForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-primary px-4 py-2.5 font-medium text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-60"
+        className="type-label mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-foreground px-6 font-medium text-background transition-opacity duration-300 ease-out hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "登录中…" : "登录"}
       </button>

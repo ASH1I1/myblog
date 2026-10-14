@@ -1,12 +1,19 @@
 /**
  * ============================================================
- *  个人展示板块配置 —— 最爱 / 影响者 / 项目 / 游戏 / 音乐 / 读过
- *  全站所有展示内容都集中在这个文件里，替换成真实内容即可。
- *  （博客本体的站点信息仍在 src/lib/site-config.ts）
+ *  展示板块的**结构**（不是内容）
+ *
+ *  2026-10-14 起，各板块的**内容**（最爱/项目/游戏/音乐/读过 + 关于我）搬去了
+ *  `data/content.json`，由后台 `/admin/content/*` 可视化编辑；
+ *  读写的口子在 `src/lib/content/`（store = 读写、schema = 校验、types = 形状、
+ *  preview = 章节小预览的派生）。
+ *
+ *  留在这个文件里的是**结构**：五个板块的 id/标签/主题色/标语 ——
+ *  它们同时喂给顶部导航、章节书签与目录卡片，还与 `chapters.ts` 的章节编号绑定，
+ *  属于「代码里的站点骨架」，不适合让后台随手改（改标题要连带改锚点与顺序）。
+ *  如果哪天要让它们也可编辑，得把 `chapters.ts` 从常量改成函数、并把 Navbar 一起
+ *  props 化——那是一整套改动，单独立项。
  * ============================================================
  */
-
-/* ---------------------------- 类型定义 ---------------------------- */
 
 export type ShowcaseSection = {
   href: string;
@@ -18,47 +25,7 @@ export type ShowcaseSection = {
   tagline: string;
 };
 
-/**
- * 收藏条目。
- * `url` 以 `/` 开头＝站内路径（当前标签页进入）；否则是外链（新窗口打开）。
- * `image` 可选：条目横幅条右端那张图的路径（public/ 下的）。**现在是占位图**，
- *   真图到位后直接覆盖 `public/favorites/<slug>.svg`，或在这里换路径即可。
- * `badge` 可选：名字后面那枚小徽标（例如新加的条目写「新增」），不填就没有。
- * `imageFit` 可选：配图在右侧图区里的取法，默认 "cover"（按图区裁切、贴右、并放大取景）。
- *   方图（例如播客封面）用 "contain"，让它按条高完整显示、不裁不放大。
- * `note` 可选：外链条目灯箱里的短文（当前没有条目在用，留着备用）。
- */
-export type FavoriteLink = {
-  name: string;
-  description: string;
-  url: string;
-  emoji: string;
-  image?: string;
-  imageFit?: "cover" | "contain";
-  badge?: string;
-  note?: string;
-};
-/**
- * 收藏按年份分章：一年一章，年份从早到晚，章内按加入先后排。
- * `cover` 可选：该年的**默认配图**（public/ 下的路径）——条目自己没写 `image` 时用它，
- * 2011 那条就是靠它显示书封照片。两者都没有的条目只显示文字。
- */
-export type FavoriteYear = {
-  year: number;
-  items: FavoriteLink[];
-  cover?: string;
-};
-export type SkillGroup = { title: string; skills: string[] };
-export type Project = { name: string; emoji: string; description: string; tags: string[]; url: string };
-export type GameRecent = { name: string; platform: string; hours: string; note: string };
-export type GameTop = { name: string; note: string };
-export type GameStat = { label: string; value: number; suffix: string };
-export type Artist = { name: string; note: string };
-export type Track = { title: string; artist: string };
-export type Book = { title: string; author: string; status: "已读" | "在读" | "想读"; note: string; rating?: string };
-
-/* ---------------------------- 板块导航（顺序即导航顺序） ---------------------------- */
-
+/** 板块导航（顺序即导航顺序） */
 export const showcaseNav: ShowcaseSection[] = [
   { href: "/favorites", label: "最爱", emoji: "⭐", color: "#f59e0b", tagline: "这些是伟大的灯塔，照亮了我的道路。他们塑造了我的旅程。" },
   { href: "/projects", label: "项目", emoji: "📁", color: "#7c5cff", tagline: "做过的东西，都在这。" },
@@ -67,8 +34,11 @@ export const showcaseNav: ShowcaseSection[] = [
   { href: "/read", label: "读过", emoji: "📚", color: "#3b82f6", tagline: "读了什么，顺便记在墙上。" },
 ];
 
-/* ---------------------------- 首页 Hero：姓名 + 身份标签 + 自我介绍 ---------------------------- */
-
+/**
+ * 首页 Hero 的姓名 / 身份标签 / 自我介绍——**当前没有任何消费者**（Hero 改用
+ * `site-config.ts` 的站名与标语了），属于历史遗留的备用数据，留着不接任何 UI。
+ * 哪天要恢复「Hero 显示个人简介」，把它接回 `hero.tsx` 即可。
+ */
 export const heroProfile = {
   name: "陈墨",
   roles: ["内容创作者", "独立开发者", "游戏玩家", "终身学习者"],
@@ -76,161 +46,23 @@ export const heroProfile = {
     "白天写代码，晚上打游戏、听歌、读书。这个博客用来放我喜欢的一切，以及我在各个平台上的足迹。",
 };
 
-/* ---------------------------- 最爱（按年份分章的收藏夹） ---------------------------- */
-
-/** 内容区最顶部的引导语 */
-export const favoritesIntro = "一些照亮过我的东西。";
-
+/* ---------------------------- 类型 re-export ---------------------------- */
 /**
- * 收藏条目：想加新东西，只在对应年份的 items 里加一条即可，页面代码不用动。
- *
- * 这里按「从早到晚」维护（方便按时间往下追加），**页面显示时再倒排成从新到旧**
- * （见 favorites-chapter.tsx）。所以新增一年时插在哪都无所谓，它都会自动出现在最前面。
- * 同一年内按加入的先后排。
+ * 内容的类型定义在 `src/lib/content/types.ts`（与数据层放一起）。这里转出去，
+ * 是为了让 `@/lib/showcase` 这个老入口继续可用——各组件的历史 import 不必全改一遍。
  */
-export const favoriteYears: FavoriteYear[] = [
-  {
-    year: 2011,
-    // 书封：图放在 public/jobs-cover.jpg
-    cover: "/jobs-cover.jpg",
-    items: [
-      {
-        name: "乔布斯传",
-        emoji: "🍎",
-        description: "stay hungry, stay foolish.",
-        // 站内路径：条目行与封面相框都直接进这篇文章
-        // （豆瓣书页挪到了文章末尾的「延伸阅读」里）
-        url: "/posts/19",
-        // 灯箱（当前没有条目在用，留着备用）里的短文
-        note: "写一段你和这本书的故事。",
-      },
-    ],
-  },
-  {
-    year: 2024,
-    items: [
-      {
-        name: "无人知晓",
-        emoji: "🎙️",
-        description: "2024 的第一条：《与自由的距离》（E33）",
-        url: "https://www.xiaoyuzhoufm.com/episode/65dd839000ca19a600292454",
-        // 配图用的是这档播客在小宇宙的封面（320×320 方图），**与书封同一套处理**：
-        // 走默认的 cover —— 按图区裁成横向长条、叠 scale 等比放大，只留封面中间
-        // 那条渐变环形（上下裁掉），左右用 mask 化开、没有边框和阴影，融进网格底。
-        image: "/favorites/wurenzhixiao-cover.jpg",
-        badge: "新增",
-      },
-      { name: "GitHub", emoji: "🐙", description: "代码的归宿，也是灵感来源", url: "https://github.com", image: "/favorites/github.svg" },
-      { name: "Notion", emoji: "📝", description: "第二大脑：笔记与项目都在这儿", url: "https://www.notion.so", image: "/favorites/notion.svg" },
-      { name: "哔哩哔哩", emoji: "📺", description: "学习区和游戏区的常驻观众", url: "https://www.bilibili.com", image: "/favorites/bilibili.svg" },
-      { name: "机核", emoji: "🎲", description: "游戏文化、电台与深度文章", url: "https://www.gcores.com", image: "/favorites/gcores.svg" },
-      { name: "知乎", emoji: "💬", description: "偶尔回答一些技术问题", url: "https://www.zhihu.com", image: "/favorites/zhihu.svg" },
-    ],
-  },
-  {
-    year: 2025,
-    items: [
-      { name: "Figma", emoji: "🎨", description: "界面设计，从草图到成品", url: "https://www.figma.com", image: "/favorites/figma.svg" },
-      { name: "Excalidraw", emoji: "✏️", description: "随手画架构图与白板草稿", url: "https://excalidraw.com", image: "/favorites/excalidraw.svg" },
-      { name: "少数派", emoji: "📰", description: "数字生活与效率工具的好内容", url: "https://sspai.com", image: "/favorites/sspai.svg" },
-    ],
-  },
-  {
-    year: 2026,
-    items: [
-      { name: "Dribbble", emoji: "🖌️", description: "一口气能刷一小时的设计作品集", url: "https://dribbble.com", image: "/favorites/dribbble.svg" },
-      { name: "Awwwards", emoji: "🏆", description: "每年最好看的网页都在这里", url: "https://www.awwwards.com", image: "/favorites/awwwards.svg" },
-    ],
-  },
-];
-
-/* ---------------------------- 项目（做过的项目与技术栈） ---------------------------- */
-
-export const skills: SkillGroup[] = [
-  { title: "语言", skills: ["TypeScript", "Python", "Go", "SQL"] },
-  { title: "前端", skills: ["React", "Next.js", "Tailwind CSS", "Vite"] },
-  { title: "后端与工具", skills: ["Node.js", "PostgreSQL", "Redis", "Docker", "Git"] },
-];
-
-export const projects: Project[] = [
-  {
-    name: "墨记",
-    emoji: "📓",
-    description: "极简 Markdown 笔记工具，本地优先、打开即写。",
-    tags: ["Next.js", "SQLite"],
-    url: "#",
-  },
-  {
-    name: "像素天气",
-    emoji: "🌤️",
-    description: "像素风天气预报小站，支持城市搜索和有趣的小动画。",
-    tags: ["React", "天气 API"],
-    url: "#",
-  },
-  {
-    name: "今天的汤",
-    emoji: "🍜",
-    description: "随机推荐「今天吃什么」的小玩具，专治选择困难。",
-    tags: ["Vue", "Serverless"],
-    url: "#",
-  },
-  {
-    name: "dotfiles",
-    emoji: "⚙️",
-    description: "我的开发环境配置，换新机器一条命令还原。",
-    tags: ["Shell", "自动化"],
-    url: "#",
-  },
-];
-
-/* ---------------------------- 游戏 ---------------------------- */
-
-export const games = {
-  recent: [
-    { name: "塞尔达传说：王国之泪", platform: "Switch", hours: "65 小时", note: "地图探索上瘾中，不急，慢慢逛" },
-    { name: "黑神话：悟空", platform: "PC", hours: "28 小时", note: "美术太顶了，每个场景都想截图" },
-    { name: "哈迪斯 II", platform: "PC", hours: "41 小时", note: "肉鸽永动机，一局接一局" },
-  ] as GameRecent[],
-  top: [
-    { name: "空洞骑士", note: "永远的白月光" },
-    { name: "塞尔达传说：旷野之息", note: "重新定义了探索" },
-    { name: "蔚蓝 Celeste", note: "难，但温柔" },
-    { name: "双人成行", note: "最适合和朋友玩" },
-    { name: "死亡搁浅", note: "走着走着就哭了" },
-  ] as GameTop[],
-  stats: [
-    { label: "Steam 库", value: 328, suffix: "款" },
-    { label: "去年游戏时长", value: 412, suffix: "小时" },
-    { label: "全成就游戏", value: 12, suffix: "款" },
-  ] as GameStat[],
-};
-
-/* ---------------------------- 音乐 ---------------------------- */
-
-export const music = {
-  yearly: { title: "冀西南林路行（全场）", artist: "万能青年旅店", note: "去年循环了 187 次" },
-  artists: [
-    { name: "万能青年旅店", note: "华北平原的浪漫与失意" },
-    { name: "陈绮贞", note: "从《旅行的意义》开始入坑" },
-    { name: "Radiohead", note: "越听越上头的英伦老牌" },
-    { name: "宇多田光", note: "First Love 永远是第一" },
-  ] as Artist[],
-  onRepeat: [
-    { title: "秦皇岛", artist: "万能青年旅店" },
-    { title: "First Love", artist: "宇多田光" },
-    { title: "太空浪子", artist: "康士坦的变化球" },
-    { title: "Creep", artist: "Radiohead" },
-    { title: "旅行的意义", artist: "陈绮贞" },
-  ] as Track[],
-};
-
-/* ---------------------------- 读过（书单） ---------------------------- */
-
-export const books: Book[] = [
-  { title: "置身事内", author: "兰小欢", status: "已读", note: "把中国经济运转讲得最明白的一本书。", rating: "★★★★★" },
-  { title: "人类简史", author: "尤瓦尔·赫拉利", status: "已读", note: "宏大叙事，读完看待世界的方式变了。", rating: "★★★★☆" },
-  { title: "代码整洁之道", author: "Robert C. Martin", status: "已读", note: "常翻常新，但不必全信（有的观点我至今不同意）。", rating: "★★★★☆" },
-  { title: "献给阿尔吉侬的花束", author: "丹尼尔·凯斯", status: "在读", note: "日记体的科幻，越读越心疼。" },
-  { title: "翦商", author: "李硕", status: "想读", note: "听说很硬核，需要一点勇气翻开。" },
-  { title: "禅与摩托车维修艺术", author: "罗伯特·波西格", status: "想读", note: "被安利了很多次。" },
-];
+export type {
+  AboutContent,
+  Artist,
+  Book,
+  ChapterPreviewList,
+  ChapterPreviewRow,
+  FavoriteLink,
+  FavoriteYear,
+  GameEntry,
+  MusicContent,
+  Project,
+  SiteContent,
+  SkillGroup,
+  Track,
+} from "./content/types";

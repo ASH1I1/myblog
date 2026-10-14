@@ -23,6 +23,11 @@ function runEngine(): Teardown {
   const update = () => {
     ticking = false;
     const viewportHeight = window.innerHeight;
+    // **先一次性读完所有 rect，最后统一写 transform**：读→写→读→写 交替的话，
+    // 每一次写之后再读都会强制刷新一遍布局（layout thrashing）——滚动时这块里
+    // 有十来个元素，就是每帧十几次强制布局。分两趟之后读发生在布局干净时、
+    // 写集中落在末尾，位移值一模一样（transform 不参与布局，读到的 rect 也不受影响）。
+    const pending: Array<{ el: HTMLElement; shift: number }> = [];
     for (const el of parallaxElements) {
       const rect = el.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > viewportHeight) continue;
@@ -32,10 +37,12 @@ function runEngine(): Teardown {
         (rect.top + rect.height / 2 - viewportHeight / 2) / viewportHeight;
       // 图片上下各留 7% 的余量，位移钳制在其中，避免露出边缘
       const max = rect.height * 0.07;
-      const shift = Math.max(
-        -max,
-        Math.min(max, progress * viewportHeight * 0.15),
-      );
+      pending.push({
+        el,
+        shift: Math.max(-max, Math.min(max, progress * viewportHeight * 0.15)),
+      });
+    }
+    for (const { el, shift } of pending) {
       el.style.transform = `translate3d(0, ${shift.toFixed(2)}px, 0)`;
     }
   };

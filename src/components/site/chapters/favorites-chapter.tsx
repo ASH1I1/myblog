@@ -3,20 +3,33 @@ import { Chapter } from "@/components/site/chapter";
 import { FavoriteStrip } from "@/components/site/favorite-strip";
 import { PreviewProvider } from "@/components/site/preview-provider";
 import { PreviewTrigger } from "@/components/site/preview-trigger";
-import { favoritesIntro, favoriteYears } from "@/lib/showcase";
+import { chapterList } from "@/lib/content/preview";
+import { getContent } from "@/lib/content/store";
 
-/** 04 最爱：按年份分章（内容全在 src/lib/showcase.ts，加条目只改那里） */
-export function FavoritesChapter() {
+/**
+ * 04 最爱：按年份分章（内容在 `data/content.json`，后台 /admin/content/favorites 可编辑）。
+ *
+ * 副标题一律用**短词条**——站内文章条目也不取文章摘要：
+ * 那一版的摘要有两三行，会把条目名挤到折行（2026-10-13 试过又撤了）。
+ * 文章摘要只在悬浮预览面板里出现（面板宽度放得下）。
+ */
+export async function FavoritesChapter() {
+  const content = await getContent();
   // 年份从新到旧显示：数据文件按「从早到晚」维护，排序放在这里做，
-  // 于是以后往 favoriteYears 里加一年（插在哪都行）都会自动排到最前面。
-  // 先展开再 sort —— sort 会就地改数组，不能直接改那个模块级常量。
-  const years = [...favoriteYears].sort((a, b) => b.year - a.year);
+  // 于是以后加一年（插在哪都行）都会自动排到最前面。
+  // 先展开再 sort —— sort 会就地改数组，不能直接改读出来的那份。
+  const years = [...content.favorites.years].sort((a, b) => b.year - a.year);
 
   return (
     <Chapter id="favorites">
-      <PreviewProvider>
+      {/* 预览面板那段的「本章小预览」在服务端算好传进去（客户端读不到 JSON 文件） */}
+      <PreviewProvider
+        chapterId="favorites"
+        content="item"
+        list={chapterList("favorites", content)}
+      >
         <Reveal>
-          <p className="type-body text-muted">{favoritesIntro}</p>
+          <p className="type-body text-muted">{content.favorites.intro}</p>
         </Reveal>
 
         {years.map((group) => (
@@ -41,7 +54,7 @@ export function FavoritesChapter() {
                     item={{
                       meta: `最爱 · ${group.year}`,
                       title: link.name,
-                      summary: link.description,
+                      summary: link.note ?? link.description,
                       action: {
                         href: link.url,
                         label: link.url.startsWith("/") ? "打开 →" : "打开链接 →",

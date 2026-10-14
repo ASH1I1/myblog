@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   // 静态外壳 + use cache + Suspense 流式渲染，详见 doc/tech.md
   cacheComponents: true,
   partialPrefetching: true,
+  // 关掉开发模式的 Dev Tools 圆标。它默认浮在**左下角**（本机实测：32×32 的按钮，
+  // 坐标 x22/y846），页面上一直贴着内容，容易被当成站点自己的浮窗
+  // （2026-10-14 用户确认去掉）。只影响 `next dev`：编译 / 运行时报错仍会照常弹出。
+  // 只想挪个角、不想彻底关，就写 devIndicators: { position: "bottom-right" }。
+  devIndicators: false,
   // 原生模块交由 Node 直接 require，不参与打包
   serverExternalPackages: ["better-sqlite3"],
   turbopack: {

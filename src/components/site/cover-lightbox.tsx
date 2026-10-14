@@ -54,10 +54,11 @@ export function CoverFrame({
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
-  // Esc 关闭 + 打开后把焦点送到关闭键（沿用后台删除弹窗那套）
+  // Esc 关闭 + 打开后把焦点送到关闭键（沿用后台删除弹窗那套）。
+  // 同样带 `preventScroll`：焦点该送就送，但别让浏览器顺手把页面滚一下。
   useEffect(() => {
     if (!open) return;
-    closeRef.current?.focus();
+    closeRef.current?.focus({ preventScroll: true });
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };

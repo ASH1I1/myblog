@@ -11,7 +11,7 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 export default function AdminLoginPage(props: { searchParams: SearchParams }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+    <main className="admin-scope flex min-h-dvh items-center justify-center px-4 py-10">
       {/* 回跳地址（?next=）与过期提示（?expired=1）来自 URL：
           静态外壳先出表单本体，参数在 Suspense 内流式解析后补上 */}
       <Suspense fallback={<LoginForm />}>

@@ -14,15 +14,15 @@ export function PostTable({
 }) {
   if (posts.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-background px-5 py-14 text-center">
+      <div className="rounded-2xl border border-dashed border-border bg-background px-5 py-14 text-center">
         {hasFilters ? (
-          <p className="text-sm text-muted">未找到匹配文章</p>
+          <p className="type-body text-muted">未找到匹配文章</p>
         ) : (
           <>
-            <p className="text-sm text-muted">还没有文章</p>
+            <p className="type-body text-muted">还没有文章</p>
             <Link
               href="/admin/posts/new"
-              className="mt-4 inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-strong"
+              className="type-label mt-5 inline-flex min-h-11 items-center rounded-full bg-foreground px-6 font-medium text-background transition-opacity duration-300 ease-out hover:opacity-80"
             >
               新建文章
             </Link>
@@ -33,15 +33,25 @@ export function PostTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-background">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-background">
       <table className="w-full min-w-[760px] text-left text-sm">
         <thead>
-          <tr className="border-b border-border text-muted">
-            <th className="px-5 py-3 font-medium">标题</th>
-            <th className="px-5 py-3 font-medium">状态</th>
-            <th className="px-5 py-3 font-medium">发布时间</th>
-            <th className="px-5 py-3 font-medium">更新时间</th>
-            <th className="px-5 py-3 text-right font-medium">操作</th>
+          <tr className="border-b border-border">
+            <th className="type-label px-5 py-3 font-mono tracking-[0.2em] text-faint">
+              标题
+            </th>
+            <th className="type-label px-5 py-3 font-mono tracking-[0.2em] text-faint">
+              状态
+            </th>
+            <th className="type-label px-5 py-3 font-mono tracking-[0.2em] text-faint">
+              发布时间
+            </th>
+            <th className="type-label px-5 py-3 font-mono tracking-[0.2em] text-faint">
+              更新时间
+            </th>
+            <th className="type-label px-5 py-3 text-right font-mono tracking-[0.2em] text-faint">
+              操作
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -53,7 +63,7 @@ export function PostTable({
               <td className="max-w-[360px] px-5 py-3">
                 <Link
                   href={`/admin/posts/${post.id}/edit`}
-                  className="block truncate hover:text-primary"
+                  className="block truncate transition-colors duration-300 ease-out hover:text-klein"
                   title={post.title}
                 >
                   {post.title}
@@ -72,7 +82,7 @@ export function PostTable({
                 <div className="flex items-center justify-end gap-2">
                   <Link
                     href={`/admin/posts/${post.id}/edit`}
-                    className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm transition-colors hover:border-primary hover:text-primary"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-sm transition-colors duration-300 ease-out hover:border-klein hover:text-klein"
                   >
                     编辑
                   </Link>

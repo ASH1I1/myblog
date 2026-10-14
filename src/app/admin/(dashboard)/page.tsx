@@ -25,7 +25,7 @@ export default async function AdminDashboardPage() {
         <h1 className="text-2xl font-semibold">仪表盘</h1>
         <Link
           href="/admin/posts/new"
-          className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-strong"
+          className="type-label inline-flex min-h-11 items-center rounded-full bg-foreground px-6 font-medium text-background transition-opacity duration-300 ease-out hover:opacity-80"
         >
           新建文章
         </Link>
@@ -39,22 +39,22 @@ export default async function AdminDashboardPage() {
         <StatCard label="总阅读量" value={stats.totalViews} />
       </div>
 
-      <section className="rounded-xl border border-border bg-background">
-        <header className="border-b border-border px-5 py-4">
-          <h2 className="font-medium">最近更新</h2>
+      <section className="rounded-2xl border border-border bg-background">
+        <header className="rule-fade-b px-5 py-4">
+          <h2 className="type-label font-mono tracking-[0.3em] text-faint">最近更新</h2>
         </header>
 
         {recentPosts.length === 0 ? (
-          <div className="px-5 py-12 text-center text-sm text-muted">
+          <div className="px-5 py-12 text-center type-body text-muted">
             暂无文章，
-            <Link href="/admin/posts/new" className="text-primary hover:underline">
+            <Link href="/admin/posts/new" className="text-klein hover:underline">
               去写第一篇吧
             </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="text-muted">
+              <thead>
                 <tr className="border-b border-border">
                   <th className="px-5 py-3 font-medium">标题</th>
                   <th className="px-5 py-3 font-medium">状态</th>
@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
                     <td className="max-w-[420px] px-5 py-3">
                       <Link
                         href={`/admin/posts/${post.id}/edit`}
-                        className="block truncate hover:text-primary"
+                        className="block truncate transition-colors duration-300 ease-out hover:text-klein"
                         title={post.title}
                       >
                         {post.title}

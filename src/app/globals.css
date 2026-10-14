@@ -38,6 +38,13 @@
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
+
+  /* 后台的焦点圈改用克莱因蓝：后台整体向前台的克莱因蓝看齐，
+     但全站那条 base 规则保持 primary 不动——前台的分页激活态与焦点圈仍是蓝的。
+     这里只覆盖 `.admin-scope` 这一支，作用域由后台的布局与登录页自己挂上。 */
+  .admin-scope :focus-visible {
+    outline-color: var(--color-klein);
+  }
 }
 
 @layer components {
@@ -56,7 +63,7 @@
     }
   }
 
-  /* 展示板块页版式（最爱 / 项目 / 游戏 / 音乐 / 著作）：
+  /* 展示板块页版式（最爱 / 项目 / 游戏 / 音乐 / 读过）：
      与 .container-page 相反——不居中、贴着左边站，内边距与导航内栏完全同值
      （navbar.tsx 的 px-5 / md:px-8），于是页面大标题的左边缘与导航里站名的
      左边缘是同一条线，任何宽度下都不漂移。

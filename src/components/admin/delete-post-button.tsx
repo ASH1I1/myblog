@@ -40,7 +40,7 @@ export function DeletePostButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm text-danger transition-colors hover:border-danger hover:bg-red-50"
+        className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-sm text-danger transition-colors duration-300 ease-out hover:border-danger"
       >
         删除
       </button>
@@ -57,19 +57,19 @@ export function DeletePostButton({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="relative w-full max-w-md rounded-xl border border-border bg-background p-6 shadow-xl"
+            className="relative w-full max-w-md rounded-2xl border border-border bg-background p-6 shadow-xl"
           >
-            <h2 id={titleId} className="text-lg font-semibold">
+            <h2 id={titleId} className="type-label font-mono tracking-[0.3em] text-faint">
               删除文章
             </h2>
-            <p className="mt-3 text-sm text-muted">
+            <p className="type-body mt-4">
               确定要删除
               <span className="mx-1 font-medium text-foreground">
                 「{title}」
               </span>
               吗？
             </p>
-            <p className="mt-1 text-sm text-danger">删除后不可恢复。</p>
+            <p className="type-label mt-2 text-danger">删除后不可恢复。</p>
 
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -77,7 +77,7 @@ export function DeletePostButton({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={pending}
-                className="inline-flex min-h-11 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+                className="type-label inline-flex min-h-11 items-center rounded-lg border border-border px-5 font-medium transition-colors duration-300 ease-out hover:border-klein hover:text-klein disabled:cursor-not-allowed disabled:opacity-60"
               >
                 取消
               </button>
@@ -85,7 +85,7 @@ export function DeletePostButton({
                 type="button"
                 onClick={confirmDelete}
                 disabled={pending}
-                className="inline-flex min-h-11 items-center rounded-md bg-danger px-4 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="type-label inline-flex min-h-11 items-center rounded-full bg-danger px-6 font-medium text-white transition-opacity duration-300 ease-out hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {pending ? "删除中…" : "确认删除"}
               </button>
